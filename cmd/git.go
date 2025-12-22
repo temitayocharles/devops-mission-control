@@ -394,7 +394,7 @@ func init() {
 	gitCmd.AddCommand(gitDiffCmd)
 
 	// Tag subcommands
-	gitTagListCmd.AddCommand(gitTagListCmd)
+	gitTagCmd.AddCommand(gitTagListCmd)
 	gitTagCreateCmd.Flags().StringP("message", "m", "", "Tag message (for annotated tag)")
 	gitTagCmd.AddCommand(gitTagCreateCmd)
 
