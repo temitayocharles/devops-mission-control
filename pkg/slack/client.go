@@ -380,9 +380,10 @@ func (c *Client) SendOperationStatus(operation, status string, duration float64,
 // SendResourceStatus sends resource status update to Slack
 func (c *Client) SendResourceStatus(resource, resourceType, status string, stats map[string]string) error {
 	color := "#36a64f"
-	if status == "unhealthy" || status == "error" {
+	switch status {
+	case "unhealthy", "error":
 		color = "#ff0000"
-	} else if status == "degraded" || status == "warning" {
+	case "degraded", "warning":
 		color = "#ff9900"
 	}
 
