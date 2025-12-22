@@ -94,6 +94,22 @@ func authMiddleware(minRole authpkg.Role, h http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
+// authMethodMiddleware enforces different minimum roles depending on HTTP method.
+// GET/HEAD/OPTIONS use `viewRole`, while POST/PUT/DELETE use `postRole`.
+func authMethodMiddleware(viewRole, postRole authpkg.Role, h http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		// pick required role by method
+		switch r.Method {
+		case http.MethodPost, http.MethodPut, http.MethodDelete:
+			authMiddleware(postRole, h)(w, r)
+			return
+		default:
+			authMiddleware(viewRole, h)(w, r)
+			return
+		}
+	}
+}
+
 // Start starts the dashboard server
 func (d *Dashboard) Start() error {
 	// write a debug marker so we can trace startup failures from logs
@@ -120,12 +136,13 @@ func (d *Dashboard) Start() error {
 
 	mux := http.NewServeMux()
 
-	// API endpoints (require viewer role to read)
-	mux.HandleFunc("/api/metrics", authMiddleware(authpkg.RoleViewer, d.handleMetrics))
-	mux.HandleFunc("/api/events", authMiddleware(authpkg.RoleViewer, d.handleEvents))
-	mux.HandleFunc("/api/alerts", authMiddleware(authpkg.RoleViewer, d.handleAlerts))
-	mux.HandleFunc("/api/audit", authMiddleware(authpkg.RoleViewer, d.handleAudit))
-	mux.HandleFunc("/api/stats", authMiddleware(authpkg.RoleViewer, d.handleStats))
+	// API endpoints (viewer for reads, operator for creates/changes)
+	mux.HandleFunc("/api/metrics", authMethodMiddleware(authpkg.RoleViewer, authpkg.RoleOperator, d.handleMetrics))
+	mux.HandleFunc("/api/events", authMethodMiddleware(authpkg.RoleViewer, authpkg.RoleOperator, d.handleEvents))
+	mux.HandleFunc("/api/alerts", authMethodMiddleware(authpkg.RoleViewer, authpkg.RoleOperator, d.handleAlerts))
+	// audit is sensitive: admin only
+	mux.HandleFunc("/api/audit", authMiddleware(authpkg.RoleAdmin, d.handleAudit))
+	mux.HandleFunc("/api/stats", authMethodMiddleware(authpkg.RoleViewer, authpkg.RoleOperator, d.handleStats))
 	mux.HandleFunc("/api/health", authMiddleware(authpkg.RoleViewer, d.handleHealth))
 
 	// Web UI (require viewer)

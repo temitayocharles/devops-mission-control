@@ -107,3 +107,46 @@ func TestRequireAdminOrSelfAndResolveActorWithToken(t *testing.T) {
 		t.Fatalf("carol is not admin and should be forbidden")
 	}
 }
+
+func TestRequireMinRole_NoActor(t *testing.T) {
+	origWd, _ := os.Getwd()
+	tmp := t.TempDir()
+	if err := os.Chdir(tmp); err != nil {
+		t.Fatalf("chdir: %v", err)
+	}
+	defer os.Chdir(origWd)
+
+	userStore = authpkg.NewUserStore()
+	tokenStore = authpkg.NewTokenStore(filepath.Join(tmp, "tokens.json"))
+
+	cmd := &cobra.Command{}
+	cmd.Flags().String("actor", "", "actor")
+	cmd.Flags().String("token", "", "token")
+
+	if err := requireMinRole(cmd, authpkg.RoleViewer); err == nil {
+		t.Fatalf("expected error when no actor or token provided")
+	}
+}
+
+func TestRequireAdmin_InvalidToken(t *testing.T) {
+	origWd, _ := os.Getwd()
+	tmp := t.TempDir()
+	if err := os.Chdir(tmp); err != nil {
+		t.Fatalf("chdir: %v", err)
+	}
+	defer os.Chdir(origWd)
+
+	userStore = authpkg.NewUserStore()
+	tokenStore = authpkg.NewTokenStore(filepath.Join(tmp, "tokens.json"))
+
+	// set a token that doesn't exist
+	cmd := &cobra.Command{}
+	cmd.Flags().String("actor", "", "actor")
+	cmd.Flags().String("token", "", "token")
+	if err := cmd.Flags().Set("token", "deadbeef"); err != nil {
+		t.Fatalf("set token: %v", err)
+	}
+	if _, err := resolveActor(cmd); err == nil {
+		t.Fatalf("expected error resolving invalid token")
+	}
+}
