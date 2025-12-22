@@ -220,9 +220,10 @@ func (s *MetricsStore) GetStats() map[string]interface{} {
 	successCount := 0
 	failureCount := 0
 	for _, e := range s.Events {
-		if e.Status == "success" {
+		switch e.Status {
+		case "success":
 			successCount++
-		} else if e.Status == "failure" {
+		case "failure":
 			failureCount++
 		}
 	}

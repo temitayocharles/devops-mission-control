@@ -210,9 +210,10 @@ func (c *Client) SendMessage(text string) error {
 // SendAlert sends an alert notification to Slack
 func (c *Client) SendAlert(alertName, severity, message string, metadata map[string]string) error {
 	color := "#36a64f" // green
-	if severity == "warning" {
+	switch severity {
+	case "warning":
 		color = "#ff9900" // orange
-	} else if severity == "critical" {
+	case "critical":
 		color = "#ff0000" // red
 	}
 
@@ -257,9 +258,10 @@ func (c *Client) SendAlert(alertName, severity, message string, metadata map[str
 // SendDeployment sends a deployment notification to Slack
 func (c *Client) SendDeployment(app, status, version string, metadata map[string]string) error {
 	color := "#36a64f"
-	if status == "failed" {
+	switch status {
+	case "failed":
 		color = "#ff0000"
-	} else if status == "pending" {
+	case "pending":
 		color = "#0099ff"
 	}
 
@@ -290,9 +292,10 @@ func (c *Client) SendDeployment(app, status, version string, metadata map[string
 	}
 
 	emoji := "✅"
-	if status == "failed" {
+	switch status {
+	case "failed":
 		emoji = "❌"
-	} else if status == "pending" {
+	case "pending":
 		emoji = "⏳"
 	}
 
@@ -316,9 +319,10 @@ func (c *Client) SendDeployment(app, status, version string, metadata map[string
 // SendOperationStatus sends an operation status update to Slack
 func (c *Client) SendOperationStatus(operation, status string, duration float64, metadata map[string]string) error {
 	color := "#36a64f"
-	if status == "failed" {
+	switch status {
+	case "failed":
 		color = "#ff0000"
-	} else if status == "pending" {
+	case "pending":
 		color = "#0099ff"
 	}
 
@@ -349,9 +353,10 @@ func (c *Client) SendOperationStatus(operation, status string, duration float64,
 	}
 
 	emoji := "✅"
-	if status == "failed" {
+	switch status {
+	case "failed":
 		emoji = "❌"
-	} else if status == "pending" {
+	case "pending":
 		emoji = "⏳"
 	}
 
