@@ -155,7 +155,11 @@ func TestRequireAdmin_InvalidToken(t *testing.T) {
 	if err := os.Chdir(tmp); err != nil {
 		t.Fatalf("chdir: %v", err)
 	}
-	defer os.Chdir(origWd)
+	defer func() {
+		if cerr := os.Chdir(origWd); cerr != nil {
+			t.Fatalf("failed to chdir back: %v", cerr)
+		}
+	}()
 
 	userStore = authpkg.NewUserStore()
 	tokenStore = authpkg.NewTokenStore(filepath.Join(tmp, "tokens.json"))

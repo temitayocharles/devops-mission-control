@@ -18,8 +18,8 @@ type Role string
 
 const (
 	RoleAdmin    Role = "admin"
-	RoleOperator      = "operator"
-	RoleViewer        = "viewer"
+	RoleOperator Role = "operator"
+	RoleViewer   Role = "viewer"
 )
 
 // User represents a system user
