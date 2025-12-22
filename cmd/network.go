@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
+	authpkg "github.com/yourusername/ops-tool/pkg/auth"
 	networkpkg "github.com/yourusername/ops-tool/pkg/network"
 )
 
@@ -23,6 +24,9 @@ var networkPingCmd = &cobra.Command{
 	Short: "Ping a host",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleViewer); err != nil {
+			return err
+		}
 		client := networkpkg.NewClient()
 		output, err := client.Ping(args[0])
 		if err != nil {
@@ -38,6 +42,9 @@ var networkTracerouteCmd = &cobra.Command{
 	Short: "Trace route to host",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleViewer); err != nil {
+			return err
+		}
 		client := networkpkg.NewClient()
 		output, err := client.Traceroute(args[0])
 		if err != nil {
@@ -63,6 +70,9 @@ var networkNslookupCmd = &cobra.Command{
 	Short: "Perform nslookup",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleViewer); err != nil {
+			return err
+		}
 		client := networkpkg.NewClient()
 		output, err := client.Nslookup(args[0])
 		if err != nil {
@@ -78,6 +88,9 @@ var networkDigCmd = &cobra.Command{
 	Short: "Perform DNS lookup with dig",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleViewer); err != nil {
+			return err
+		}
 		client := networkpkg.NewClient()
 		output, err := client.Dig(args[0])
 		if err != nil {
@@ -93,6 +106,9 @@ var networkReverseCmd = &cobra.Command{
 	Short: "Perform reverse DNS lookup",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleViewer); err != nil {
+			return err
+		}
 		client := networkpkg.NewClient()
 		output, err := client.ReverseLookup(args[0])
 		if err != nil {
@@ -108,6 +124,9 @@ var networkPortCmd = &cobra.Command{
 	Short: "Check if port is open",
 	Args:  cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleViewer); err != nil {
+			return err
+		}
 		client := networkpkg.NewClient()
 		output, err := client.CheckPort(args[0], args[1])
 		if err != nil {
@@ -122,6 +141,9 @@ var networkInterfacesCmd = &cobra.Command{
 	Use:   "interfaces",
 	Short: "Show network interfaces",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleViewer); err != nil {
+			return err
+		}
 		client := networkpkg.NewClient()
 		output, err := client.GetNetworkInterfaces()
 		if err != nil {
@@ -136,6 +158,9 @@ var networkRouteCmd = &cobra.Command{
 	Use:   "route",
 	Short: "Show routing table",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleViewer); err != nil {
+			return err
+		}
 		client := networkpkg.NewClient()
 		output, err := client.GetRouteTable()
 		if err != nil {
@@ -150,6 +175,9 @@ var networkConnectionsCmd = &cobra.Command{
 	Use:   "connections",
 	Short: "Show active TCP connections",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleViewer); err != nil {
+			return err
+		}
 		client := networkpkg.NewClient()
 		output, err := client.GetTCPConnections()
 		if err != nil {
@@ -164,6 +192,9 @@ var networkHostnameCmd = &cobra.Command{
 	Use:   "hostname",
 	Short: "Get system hostname",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleViewer); err != nil {
+			return err
+		}
 		client := networkpkg.NewClient()
 		output, err := client.GetHostname()
 		if err != nil {
@@ -178,6 +209,9 @@ var networkFQDNCmd = &cobra.Command{
 	Use:   "fqdn",
 	Short: "Get fully qualified domain name",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleViewer); err != nil {
+			return err
+		}
 		client := networkpkg.NewClient()
 		output, err := client.GetFQDN()
 		if err != nil {
@@ -193,6 +227,9 @@ var networkSSLCmd = &cobra.Command{
 	Short: "Check SSL certificate",
 	Args:  cobra.MinimumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleViewer); err != nil {
+			return err
+		}
 		client := networkpkg.NewClient()
 		port := ""
 		if len(args) > 1 {
@@ -212,6 +249,9 @@ var networkMTUCmd = &cobra.Command{
 	Short: "Check network MTU",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleViewer); err != nil {
+			return err
+		}
 		client := networkpkg.NewClient()
 		output, err := client.CheckMTU(args[0])
 		if err != nil {
@@ -226,6 +266,9 @@ var networkDNSServersCmd = &cobra.Command{
 	Use:   "nameservers",
 	Short: "Show DNS servers",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleViewer); err != nil {
+			return err
+		}
 		client := networkpkg.NewClient()
 		output, err := client.GetDNSServers()
 		if err != nil {
@@ -241,6 +284,9 @@ var networkWhoisCmd = &cobra.Command{
 	Short: "Get WHOIS information",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleViewer); err != nil {
+			return err
+		}
 		client := networkpkg.NewClient()
 		output, err := client.Whois(args[0])
 		if err != nil {

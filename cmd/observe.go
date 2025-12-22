@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
+	authpkg "github.com/yourusername/ops-tool/pkg/auth"
 	dashboardpkg "github.com/yourusername/ops-tool/pkg/dashboard"
 	metricspkg "github.com/yourusername/ops-tool/pkg/metrics"
 	slackpkg "github.com/yourusername/ops-tool/pkg/slack"
@@ -27,28 +28,34 @@ var observabilityCmd = &cobra.Command{
 }
 
 var dashboardStartCmd = &cobra.Command{
-	Use:   "dashboard start",
+	Use:   "start",
 	Short: "Start the observability dashboard",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		// require operator role to start dashboard
+		if err := requireMinRole(cmd, authpkg.RoleOperator); err != nil {
+			return err
+		}
 		if metricsStore == nil {
 			metricsStore = metricspkg.NewMetricsStore(10000)
 		}
 
 		dashboardInst = dashboardpkg.NewDashboard(dashboardAddr, metricsStore)
-		go dashboardInst.Start()
-
-		fmt.Printf("✅ Dashboard started at http://%s\n", dashboardAddr)
-		fmt.Println("Press Ctrl+C to stop")
-
-		// Keep running
-		select {}
+		// Run dashboard in foreground so startup errors surface to stdout/logs
+		fmt.Printf("Starting dashboard at http://%s (foreground)\n", dashboardAddr)
+		if err := dashboardInst.Start(); err != nil {
+			return fmt.Errorf("failed to start dashboard: %w", err)
+		}
+		return nil
 	},
 }
 
 var dashboardStopCmd = &cobra.Command{
-	Use:   "dashboard stop",
+	Use:   "stop",
 	Short: "Stop the observability dashboard",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleOperator); err != nil {
+			return err
+		}
 		if dashboardInst == nil {
 			return fmt.Errorf("dashboard not running")
 		}
@@ -63,6 +70,10 @@ var metricsListCmd = &cobra.Command{
 	Use:   "metrics list",
 	Short: "List all metrics",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		// viewer role is sufficient to list metrics
+		if err := requireMinRole(cmd, authpkg.RoleViewer); err != nil {
+			return err
+		}
 		if metricsStore == nil {
 			metricsStore = metricspkg.NewMetricsStore(10000)
 		}
@@ -86,6 +97,10 @@ var metricsRecordCmd = &cobra.Command{
 	Short: "Record a metric",
 	Args:  cobra.ExactArgs(3),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		// only operators+ may record metrics
+		if err := requireMinRole(cmd, authpkg.RoleOperator); err != nil {
+			return err
+		}
 		if metricsStore == nil {
 			metricsStore = metricspkg.NewMetricsStore(10000)
 		}
@@ -106,6 +121,9 @@ var metricsStatsCmd = &cobra.Command{
 	Use:   "metrics stats",
 	Short: "Show metrics statistics",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleViewer); err != nil {
+			return err
+		}
 		if metricsStore == nil {
 			metricsStore = metricspkg.NewMetricsStore(10000)
 		}
@@ -123,6 +141,9 @@ var alertsListCmd = &cobra.Command{
 	Use:   "alerts list",
 	Short: "List all alerts",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleViewer); err != nil {
+			return err
+		}
 		if metricsStore == nil {
 			metricsStore = metricspkg.NewMetricsStore(10000)
 		}
@@ -149,6 +170,9 @@ var alertsActiveCmd = &cobra.Command{
 	Use:   "alerts active",
 	Short: "Show active alerts",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleViewer); err != nil {
+			return err
+		}
 		if metricsStore == nil {
 			metricsStore = metricspkg.NewMetricsStore(10000)
 		}
@@ -172,6 +196,9 @@ var alertsCreateCmd = &cobra.Command{
 	Short: "Create an alert",
 	Args:  cobra.ExactArgs(3),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleOperator); err != nil {
+			return err
+		}
 		if metricsStore == nil {
 			metricsStore = metricspkg.NewMetricsStore(10000)
 		}
@@ -186,6 +213,9 @@ var eventsListCmd = &cobra.Command{
 	Use:   "events list",
 	Short: "List all events",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleViewer); err != nil {
+			return err
+		}
 		if metricsStore == nil {
 			metricsStore = metricspkg.NewMetricsStore(10000)
 		}
@@ -209,6 +239,9 @@ var slackSendCmd = &cobra.Command{
 	Short: "Send message to Slack",
 	Args:  cobra.ExactArgs(3),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleOperator); err != nil {
+			return err
+		}
 		client := slackpkg.NewClient(args[0], args[1])
 		err := client.SendMessage(args[2])
 		if err != nil {
@@ -224,6 +257,9 @@ var slackAlertCmd = &cobra.Command{
 	Short: "Send alert to Slack",
 	Args:  cobra.ExactArgs(5),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleOperator); err != nil {
+			return err
+		}
 		client := slackpkg.NewClient(args[0], args[1])
 		err := client.SendAlert(args[2], args[3], args[4], nil)
 		if err != nil {
@@ -239,6 +275,9 @@ var slackDeployCmd = &cobra.Command{
 	Short: "Send deployment notification to Slack",
 	Args:  cobra.ExactArgs(5),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleOperator); err != nil {
+			return err
+		}
 		client := slackpkg.NewClient(args[0], args[1])
 		err := client.SendDeployment(args[2], args[3], args[4], nil)
 		if err != nil {

@@ -36,6 +36,10 @@ func init() {
 	// Global flags
 	rootCmd.PersistentFlags().BoolP("verbose", "v", false, "verbose output")
 	rootCmd.PersistentFlags().StringP("config", "c", "", "config file")
+	// Authorization flags: either supply `--actor <username>` for interactive user
+	// or `--token <token>` for API token-based calls. These are used by RBAC checks.
+	rootCmd.PersistentFlags().String("actor", "", "actor username performing the action")
+	rootCmd.PersistentFlags().String("token", "", "API token to authenticate as a user")
 }
 
 var helpCmd = &cobra.Command{

@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
+	authpkg "github.com/yourusername/ops-tool/pkg/auth"
 	"github.com/yourusername/ops-tool/pkg/docker"
 )
 
@@ -33,6 +34,9 @@ var dockerContainersListCmd = &cobra.Command{
 	Short:   "List running containers",
 	Aliases: []string{"ls", "ps"},
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleViewer); err != nil {
+			return err
+		}
 		all, _ := cmd.Flags().GetBool("all")
 		client := docker.NewClient()
 		output, err := client.ListContainers(!all)
@@ -50,6 +54,9 @@ var dockerContainersStopCmd = &cobra.Command{
 	Short: "Stop a running container",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleOperator); err != nil {
+			return err
+		}
 		client := docker.NewClient()
 		output, err := client.StopContainer(args[0])
 		if err != nil {
@@ -66,6 +73,9 @@ var dockerContainersRemoveCmd = &cobra.Command{
 	Short: "Remove a container",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleOperator); err != nil {
+			return err
+		}
 		force, _ := cmd.Flags().GetBool("force")
 		client := docker.NewClient()
 		output, err := client.RemoveContainer(args[0], force)
@@ -83,6 +93,9 @@ var dockerContainersLogsCmd = &cobra.Command{
 	Short: "View container logs",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleViewer); err != nil {
+			return err
+		}
 		follow, _ := cmd.Flags().GetBool("follow")
 		client := docker.NewClient()
 		return client.GetContainerLogs(args[0], follow)
@@ -93,6 +106,9 @@ var dockerContainersStatsCmd = &cobra.Command{
 	Use:   "stats",
 	Short: "Show container resource usage",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleViewer); err != nil {
+			return err
+		}
 		client := docker.NewClient()
 		output, err := client.GetContainerStats()
 		if err != nil {
@@ -119,6 +135,9 @@ var dockerImagesListCmd = &cobra.Command{
 	Short:   "List Docker images",
 	Aliases: []string{"ls"},
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleOperator); err != nil {
+			return err
+		}
 		client := docker.NewClient()
 		output, err := client.ListImages()
 		if err != nil {
@@ -135,6 +154,9 @@ var dockerImagesPullCmd = &cobra.Command{
 	Short: "Pull an image from registry",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleOperator); err != nil {
+			return err
+		}
 		client := docker.NewClient()
 		return client.PullImage(args[0])
 	},
@@ -145,6 +167,9 @@ var dockerImagesRemoveCmd = &cobra.Command{
 	Short: "Remove an image",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleOperator); err != nil {
+			return err
+		}
 		force, _ := cmd.Flags().GetBool("force")
 		client := docker.NewClient()
 		output, err := client.RemoveImage(args[0], force)
@@ -171,6 +196,9 @@ var dockerComposeUpCmd = &cobra.Command{
 	Use:   "up",
 	Short: "Start Docker Compose services",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleOperator); err != nil {
+			return err
+		}
 		detach, _ := cmd.Flags().GetBool("detach")
 		client := docker.NewClient()
 		return client.ComposeUp(detach)
@@ -181,6 +209,9 @@ var dockerComposeDownCmd = &cobra.Command{
 	Use:   "down",
 	Short: "Stop Docker Compose services",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleOperator); err != nil {
+			return err
+		}
 		client := docker.NewClient()
 		return client.ComposeDown()
 	},
@@ -190,6 +221,9 @@ var dockerComposeLogsCmd = &cobra.Command{
 	Use:   "logs",
 	Short: "View Docker Compose logs",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleViewer); err != nil {
+			return err
+		}
 		follow, _ := cmd.Flags().GetBool("follow")
 		client := docker.NewClient()
 		return client.ComposeLogs(follow)
@@ -200,6 +234,9 @@ var dockerComposeStatusCmd = &cobra.Command{
 	Use:   "status",
 	Short: "Show Docker Compose service status",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleViewer); err != nil {
+			return err
+		}
 		client := docker.NewClient()
 		output, err := client.ComposeStatus()
 		if err != nil {
@@ -225,6 +262,9 @@ var dockerSystemInfoCmd = &cobra.Command{
 	Use:   "info",
 	Short: "Show Docker system information",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleViewer); err != nil {
+			return err
+		}
 		client := docker.NewClient()
 		output, err := client.GetSystemInfo()
 		if err != nil {
@@ -240,6 +280,9 @@ var dockerSystemPruneCmd = &cobra.Command{
 	Use:   "prune",
 	Short: "Remove unused Docker resources",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleOperator); err != nil {
+			return err
+		}
 		all, _ := cmd.Flags().GetBool("all")
 		client := docker.NewClient()
 		output, err := client.SystemPrune(all)

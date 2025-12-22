@@ -40,3 +40,28 @@ func Record(action, actor, target string, details map[string]any) error {
 	enc := json.NewEncoder(f)
 	return enc.Encode(e)
 }
+
+// ReadEntries reads audit entries from the given file (JSON Lines). If file=="" uses DefaultFile.
+func ReadEntries(file string) ([]Entry, error) {
+	if file == "" {
+		file = DefaultFile
+	}
+	f, err := os.Open(file)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	dec := json.NewDecoder(f)
+	var res []Entry
+	for {
+		var e Entry
+		if err := dec.Decode(&e); err != nil {
+			if err.Error() == "EOF" {
+				break
+			}
+			return nil, err
+		}
+		res = append(res, e)
+	}
+	return res, nil
+}

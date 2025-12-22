@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
+	authpkg "github.com/yourusername/ops-tool/pkg/auth"
 	gcppkg "github.com/yourusername/ops-tool/pkg/gcp"
 )
 
@@ -35,6 +36,9 @@ var gcpComputeListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List Compute Engine instances",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleViewer); err != nil {
+			return err
+		}
 		client := gcppkg.NewClient(gcpProject, gcpRegion)
 		output, err := client.ListInstances()
 		if err != nil {
@@ -50,6 +54,9 @@ var gcpComputeStartCmd = &cobra.Command{
 	Short: "Start a Compute Engine instance",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleOperator); err != nil {
+			return err
+		}
 		client := gcppkg.NewClient(gcpProject, gcpRegion)
 		_, err := client.StartInstance(args[0])
 		if err != nil {
@@ -65,6 +72,9 @@ var gcpComputeStopCmd = &cobra.Command{
 	Short: "Stop a Compute Engine instance",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleOperator); err != nil {
+			return err
+		}
 		client := gcppkg.NewClient(gcpProject, gcpRegion)
 		_, err := client.StopInstance(args[0])
 		if err != nil {
@@ -89,6 +99,9 @@ var gcpStorageListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List Cloud Storage buckets",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleViewer); err != nil {
+			return err
+		}
 		client := gcppkg.NewClient(gcpProject, gcpRegion)
 		output, err := client.ListBuckets()
 		if err != nil {
@@ -113,6 +126,9 @@ var gcpSQLListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List Cloud SQL instances",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleViewer); err != nil {
+			return err
+		}
 		client := gcppkg.NewClient(gcpProject, gcpRegion)
 		output, err := client.ListSQLInstances()
 		if err != nil {
@@ -137,6 +153,9 @@ var gcpRunListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List Cloud Run services",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleViewer); err != nil {
+			return err
+		}
 		client := gcppkg.NewClient(gcpProject, gcpRegion)
 		output, err := client.ListCloudRunServices()
 		if err != nil {
@@ -161,6 +180,9 @@ var gcpIAMAccountsCmd = &cobra.Command{
 	Use:   "accounts",
 	Short: "List service accounts",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleViewer); err != nil {
+			return err
+		}
 		client := gcppkg.NewClient(gcpProject, gcpRegion)
 		output, err := client.ListServiceAccounts()
 		if err != nil {
@@ -175,6 +197,9 @@ var gcpInfoCmd = &cobra.Command{
 	Use:   "info",
 	Short: "Display GCP project information",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleViewer); err != nil {
+			return err
+		}
 		client := gcppkg.NewClient(gcpProject, gcpRegion)
 		output, err := client.GetProjectInfo()
 		if err != nil {

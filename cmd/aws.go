@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
+	authpkg "github.com/yourusername/ops-tool/pkg/auth"
 	awspkg "github.com/yourusername/ops-tool/pkg/aws"
 )
 
@@ -25,6 +26,9 @@ var awsWhoCmd = &cobra.Command{
 	Use:   "who",
 	Short: "Show current AWS identity",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleViewer); err != nil {
+			return err
+		}
 		client := awspkg.NewClient(awsRegion, awsProfile)
 		output, err := client.GetCallerIdentity()
 		if err != nil {
@@ -52,6 +56,9 @@ var awsEC2ListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List EC2 instances",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleViewer); err != nil {
+			return err
+		}
 		running, _ := cmd.Flags().GetBool("running")
 		client := awspkg.NewClient(awsRegion, awsProfile)
 		output, err := client.ListEC2Instances(running)
@@ -69,6 +76,9 @@ var awsEC2StartCmd = &cobra.Command{
 	Short: "Start an EC2 instance",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleOperator); err != nil {
+			return err
+		}
 		client := awspkg.NewClient(awsRegion, awsProfile)
 		output, err := client.StartEC2Instance(args[0])
 		if err != nil {
@@ -85,6 +95,9 @@ var awsEC2StopCmd = &cobra.Command{
 	Short: "Stop an EC2 instance",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleOperator); err != nil {
+			return err
+		}
 		client := awspkg.NewClient(awsRegion, awsProfile)
 		output, err := client.StopEC2Instance(args[0])
 		if err != nil {
@@ -101,6 +114,9 @@ var awsEC2TerminateCmd = &cobra.Command{
 	Short: "Terminate an EC2 instance",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleAdmin); err != nil {
+			return err
+		}
 		client := awspkg.NewClient(awsRegion, awsProfile)
 		output, err := client.TerminateEC2Instance(args[0])
 		if err != nil {
@@ -117,6 +133,9 @@ var awsEC2DescribeCmd = &cobra.Command{
 	Short: "Describe an EC2 instance",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleViewer); err != nil {
+			return err
+		}
 		client := awspkg.NewClient(awsRegion, awsProfile)
 		output, err := client.DescribeEC2Instance(args[0])
 		if err != nil {
@@ -145,6 +164,9 @@ var awsS3ListCmd = &cobra.Command{
 	Short: "List S3 buckets or bucket contents",
 	Args:  cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleViewer); err != nil {
+			return err
+		}
 		client := awspkg.NewClient(awsRegion, awsProfile)
 
 		if len(args) == 0 {
@@ -172,6 +194,9 @@ var awsS3SizeCmd = &cobra.Command{
 	Short: "Get S3 bucket size",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleViewer); err != nil {
+			return err
+		}
 		client := awspkg.NewClient(awsRegion, awsProfile)
 		output, err := client.GetS3BucketSize(args[0])
 		if err != nil {
@@ -199,6 +224,9 @@ var awsRDSListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List RDS instances",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleViewer); err != nil {
+			return err
+		}
 		client := awspkg.NewClient(awsRegion, awsProfile)
 		output, err := client.ListRDSInstances()
 		if err != nil {
@@ -215,6 +243,9 @@ var awsRDSDescribeCmd = &cobra.Command{
 	Short: "Describe an RDS instance",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleViewer); err != nil {
+			return err
+		}
 		client := awspkg.NewClient(awsRegion, awsProfile)
 		output, err := client.DescribeRDSInstance(args[0])
 		if err != nil {
@@ -231,6 +262,9 @@ var awsRDSStartCmd = &cobra.Command{
 	Short: "Start an RDS instance",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleOperator); err != nil {
+			return err
+		}
 		client := awspkg.NewClient(awsRegion, awsProfile)
 		output, err := client.StartRDSInstance(args[0])
 		if err != nil {
@@ -247,6 +281,9 @@ var awsRDSStopCmd = &cobra.Command{
 	Short: "Stop an RDS instance",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleOperator); err != nil {
+			return err
+		}
 		client := awspkg.NewClient(awsRegion, awsProfile)
 		output, err := client.StopRDSInstance(args[0])
 		if err != nil {
@@ -274,6 +311,9 @@ var awsCostOptimizeCmd = &cobra.Command{
 	Use:   "optimize",
 	Short: "Find unused resources and cost optimization opportunities",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleOperator); err != nil {
+			return err
+		}
 		client := awspkg.NewClient(awsRegion, awsProfile)
 		resources, err := client.FindUnusedResources()
 		if err != nil {
@@ -312,6 +352,9 @@ var awsAccountInfoCmd = &cobra.Command{
 	Use:   "info",
 	Short: "Show AWS account information",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleViewer); err != nil {
+			return err
+		}
 		client := awspkg.NewClient(awsRegion, awsProfile)
 		output, err := client.GetAWSAccountInfo()
 		if err != nil {
@@ -339,6 +382,9 @@ var awsSecurityGroupsCmd = &cobra.Command{
 	Use:   "groups",
 	Short: "List security groups",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleViewer); err != nil {
+			return err
+		}
 		client := awspkg.NewClient(awsRegion, awsProfile)
 		output, err := client.ListSecurityGroups()
 		if err != nil {
@@ -354,6 +400,9 @@ var awsSecurityVpcsCmd = &cobra.Command{
 	Use:   "vpcs",
 	Short: "List VPCs",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleViewer); err != nil {
+			return err
+		}
 		client := awspkg.NewClient(awsRegion, awsProfile)
 		output, err := client.ListVPCs()
 		if err != nil {

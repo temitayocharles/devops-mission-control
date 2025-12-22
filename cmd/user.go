@@ -19,6 +19,10 @@ var userCreateCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(3),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		username, password, role := args[0], args[1], args[2]
+		// Only admin may create arbitrary users; allow creating self if actor==username
+		if err := requireAdminOrSelf(cmd, username); err != nil {
+			return err
+		}
 		err := userStore.AddUser(username, password, authpkg.Role(role))
 		if err != nil {
 			return err
@@ -31,16 +35,20 @@ var userCreateCmd = &cobra.Command{
 var userListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List all users",
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleViewer); err != nil {
+			return err
+		}
 		users := userStore.ListUsers()
 		if len(users) == 0 {
 			fmt.Println("No users found")
-			return
+			return nil
 		}
 		fmt.Println("Users:")
 		for _, u := range users {
 			fmt.Printf("  %s (role: %s, active: %v)\n", u.Username, u.Role, u.Active)
 		}
+		return nil
 	},
 }
 
@@ -50,6 +58,9 @@ var userDeleteCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		username := args[0]
+		if err := requireAdmin(cmd); err != nil {
+			return err
+		}
 		err := userStore.DeleteUser(username)
 		if err != nil {
 			return err
@@ -66,6 +77,9 @@ var userSetRoleCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		username := args[0]
 		role := args[1]
+		if err := requireAdmin(cmd); err != nil {
+			return err
+		}
 		if err := userStore.SetUserRole(username, authpkg.Role(role)); err != nil {
 			return err
 		}

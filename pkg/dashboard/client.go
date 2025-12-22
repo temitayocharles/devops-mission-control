@@ -3,10 +3,14 @@ package dashboard
 import (
 	"encoding/json"
 	"fmt"
+	"net"
 	"net/http"
+	"os"
 	"sync"
 	"time"
 
+	"github.com/yourusername/ops-tool/pkg/audit"
+	authpkg "github.com/yourusername/ops-tool/pkg/auth"
 	"github.com/yourusername/ops-tool/pkg/metrics"
 )
 
@@ -30,8 +34,76 @@ func NewDashboard(addr string, store *metrics.MetricsStore) *Dashboard {
 	}
 }
 
+// auth resources for HTTP handlers (use same backing files)
+var (
+	httpTokenStore *authpkg.TokenStore
+	httpUserStore  = authpkg.NewUserStore()
+)
+
+// role hierarchy for simple checks
+var roleLevel = map[authpkg.Role]int{
+	authpkg.RoleViewer:   10,
+	authpkg.RoleOperator: 20,
+	authpkg.RoleAdmin:    30,
+}
+
+// authMiddleware wraps handlers and enforces a minimum role. It accepts either
+// an Authorization: Bearer <token> header or X-Actor: <username> custom header.
+func authMiddleware(minRole authpkg.Role, h http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		actor := ""
+		// check Authorization header first
+		authHeader := r.Header.Get("Authorization")
+		if authHeader != "" {
+			// expect `Bearer <token>`
+			var token string
+			fmt.Sscanf(authHeader, "Bearer %s", &token)
+			if token != "" {
+				tok, err := httpTokenStore.Validate(token)
+				if err != nil {
+					audit.Record("auth.check", "", r.URL.Path, map[string]any{"allowed": false, "reason": "invalid token"})
+					http.Error(w, "invalid token", http.StatusUnauthorized)
+					return
+				}
+				actor = tok.User
+			}
+		}
+		// fallback to X-Actor header
+		if actor == "" {
+			actor = r.Header.Get("X-Actor")
+		}
+		if actor == "" {
+			audit.Record("auth.check", "", r.URL.Path, map[string]any{"allowed": false, "reason": "no actor"})
+			http.Error(w, "missing actor or token", http.StatusUnauthorized)
+			return
+		}
+		u, err := httpUserStore.GetUser(actor)
+		if err != nil {
+			audit.Record("auth.check", actor, r.URL.Path, map[string]any{"allowed": false, "reason": "actor not found"})
+			http.Error(w, "actor not found", http.StatusUnauthorized)
+			return
+		}
+		if roleLevel[u.Role] < roleLevel[minRole] {
+			audit.Record("auth.check", actor, r.URL.Path, map[string]any{"allowed": false, "required": minRole, "have": u.Role})
+			http.Error(w, "forbidden", http.StatusForbidden)
+			return
+		}
+		// allowed
+		_ = audit.Record("auth.check", actor, r.URL.Path, map[string]any{"allowed": true, "have": u.Role})
+		h(w, r)
+	}
+}
+
 // Start starts the dashboard server
 func (d *Dashboard) Start() error {
+	// write a debug marker so we can trace startup failures from logs
+	func() {
+		if f, err := os.OpenFile("dashboard.start.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644); err == nil {
+			defer f.Close()
+			fmt.Fprintf(f, "%s: Start() called for %s\n", time.Now().Format(time.RFC3339), d.addr)
+		}
+	}()
+
 	d.mu.Lock()
 	if d.isRunning {
 		d.mu.Unlock()
@@ -40,36 +112,84 @@ func (d *Dashboard) Start() error {
 	d.isRunning = true
 	d.mu.Unlock()
 
+	// ensure token store is initialized and watcher started for the dashboard
+	if httpTokenStore == nil {
+		httpTokenStore = authpkg.NewTokenStore("tokens.json")
+		httpTokenStore.StartWatcher()
+	}
+
 	mux := http.NewServeMux()
 
-	// API endpoints
-	mux.HandleFunc("/api/metrics", d.handleMetrics)
-	mux.HandleFunc("/api/events", d.handleEvents)
-	mux.HandleFunc("/api/alerts", d.handleAlerts)
-	mux.HandleFunc("/api/stats", d.handleStats)
-	mux.HandleFunc("/api/health", d.handleHealth)
+	// API endpoints (require viewer role to read)
+	mux.HandleFunc("/api/metrics", authMiddleware(authpkg.RoleViewer, d.handleMetrics))
+	mux.HandleFunc("/api/events", authMiddleware(authpkg.RoleViewer, d.handleEvents))
+	mux.HandleFunc("/api/alerts", authMiddleware(authpkg.RoleViewer, d.handleAlerts))
+	mux.HandleFunc("/api/audit", authMiddleware(authpkg.RoleViewer, d.handleAudit))
+	mux.HandleFunc("/api/stats", authMiddleware(authpkg.RoleViewer, d.handleStats))
+	mux.HandleFunc("/api/health", authMiddleware(authpkg.RoleViewer, d.handleHealth))
 
-	// Web UI
-	mux.HandleFunc("/", d.handleDashboard)
-	mux.HandleFunc("/css/dashboard.css", d.handleCSS)
-	mux.HandleFunc("/js/dashboard.js", d.handleJS)
+	// Web UI (require viewer)
+	mux.HandleFunc("/", authMiddleware(authpkg.RoleViewer, d.handleDashboard))
+	mux.HandleFunc("/css/dashboard.css", authMiddleware(authpkg.RoleViewer, d.handleCSS))
+	mux.HandleFunc("/js/dashboard.js", authMiddleware(authpkg.RoleViewer, d.handleJS))
 
 	server := &http.Server{
 		Addr:    d.addr,
 		Handler: mux,
 	}
 
-	go func() {
-		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			fmt.Printf("Dashboard server error: %v\n", err)
+	// bind first to surface address/port errors immediately
+	ln, err := net.Listen("tcp", d.addr)
+	if err != nil {
+		// persist the error to a local file for debugging
+		f, ferr := os.OpenFile("dashboard.error.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
+		if ferr == nil {
+			defer f.Close()
+			fmt.Fprintf(f, "%s: bind error: %v\n", time.Now().Format(time.RFC3339), err)
 		}
+		_ = audit.Record("dashboard.error", "", d.addr, map[string]any{"error": err.Error()})
+		return err
+	}
+
+	// record successful bind to help debugging
+	if f, ferr := os.OpenFile("dashboard.start.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644); ferr == nil {
+		fmt.Fprintf(f, "%s: bind OK on %s\n", time.Now().Format(time.RFC3339), d.addr)
+		f.Close()
+	}
+
+	// Run server.Serve on the bound listener so bind errors are already checked.
+	errCh := make(chan error, 1)
+	if f, ferr := os.OpenFile("dashboard.start.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644); ferr == nil {
+		fmt.Fprintf(f, "%s: launching serve goroutine\n", time.Now().Format(time.RFC3339))
+		f.Close()
+	}
+	go func() {
+		errCh <- server.Serve(ln)
 	}()
 
 	fmt.Printf("✅ Dashboard started at http://%s\n", d.addr)
 
-	// Wait for stop signal
-	<-d.stopChan
-	server.Close()
+	select {
+	case err := <-errCh:
+		// persist the received err (can be nil or http.ErrServerClosed)
+		if f, ferr := os.OpenFile("dashboard.start.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644); ferr == nil {
+			fmt.Fprintf(f, "%s: errCh returned: %v\n", time.Now().Format(time.RFC3339), err)
+			f.Close()
+		}
+		if err != nil && err != http.ErrServerClosed {
+			fmt.Printf("Dashboard server error: %v\n", err)
+			// persist the error to a local file for debugging
+			f, ferr := os.OpenFile("dashboard.error.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
+			if ferr == nil {
+				defer f.Close()
+				fmt.Fprintf(f, "%s: Dashboard server error: %v\n", time.Now().Format(time.RFC3339), err)
+			}
+			_ = audit.Record("dashboard.error", "", d.addr, map[string]any{"error": err.Error()})
+			return err
+		}
+	case <-d.stopChan:
+		server.Close()
+	}
 
 	d.mu.Lock()
 	d.isRunning = false
@@ -145,6 +265,17 @@ func (d *Dashboard) handleHealth(w http.ResponseWriter, r *http.Request) {
 		"uptime":    time.Since(time.Now().Add(-1 * time.Hour)), // Example uptime
 	}
 	json.NewEncoder(w).Encode(response)
+}
+
+// handleAudit returns audit log entries as JSON
+func (d *Dashboard) handleAudit(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	entries, err := audit.ReadEntries("")
+	if err != nil {
+		http.Error(w, "failed to read audit", http.StatusInternalServerError)
+		return
+	}
+	json.NewEncoder(w).Encode(entries)
 }
 
 const dashboardHTML = `

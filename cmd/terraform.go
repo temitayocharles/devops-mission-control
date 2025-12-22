@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
+	authpkg "github.com/yourusername/ops-tool/pkg/auth"
 	terraformpkg "github.com/yourusername/ops-tool/pkg/terraform"
 )
 
@@ -24,6 +25,9 @@ var terraformVersionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Get Terraform version",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleViewer); err != nil {
+			return err
+		}
 		client := terraformpkg.NewClient(terraformWorkdir)
 		output, err := client.Version()
 		if err != nil {
@@ -38,6 +42,9 @@ var terraformValidateCmd = &cobra.Command{
 	Use:   "validate",
 	Short: "Validate Terraform configuration",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleViewer); err != nil {
+			return err
+		}
 		client := terraformpkg.NewClient(terraformWorkdir)
 		output, err := client.Validate()
 		if err != nil {
@@ -52,6 +59,9 @@ var terraformInitCmd = &cobra.Command{
 	Use:   "init",
 	Short: "Initialize Terraform working directory",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleOperator); err != nil {
+			return err
+		}
 		client := terraformpkg.NewClient(terraformWorkdir)
 		output, err := client.Init()
 		if err != nil {
@@ -66,6 +76,9 @@ var terraformPlanCmd = &cobra.Command{
 	Use:   "plan",
 	Short: "Create Terraform execution plan",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleOperator); err != nil {
+			return err
+		}
 		client := terraformpkg.NewClient(terraformWorkdir)
 		output, err := client.Plan("")
 		if err != nil {
@@ -80,6 +93,9 @@ var terraformApplyCmd = &cobra.Command{
 	Use:   "apply",
 	Short: "Apply Terraform changes",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleAdmin); err != nil {
+			return err
+		}
 		client := terraformpkg.NewClient(terraformWorkdir)
 		output, err := client.Apply("")
 		if err != nil {
@@ -94,6 +110,9 @@ var terraformDestroyCmd = &cobra.Command{
 	Use:   "destroy",
 	Short: "Destroy Terraform-managed infrastructure",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleViewer); err != nil {
+			return err
+		}
 		client := terraformpkg.NewClient(terraformWorkdir)
 		output, err := client.Destroy("")
 		if err != nil {
@@ -108,6 +127,9 @@ var terraformFormatCmd = &cobra.Command{
 	Use:   "format",
 	Short: "Format Terraform configuration files",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleViewer); err != nil {
+			return err
+		}
 		client := terraformpkg.NewClient(terraformWorkdir)
 		output, err := client.Format()
 		if err != nil {
@@ -132,6 +154,9 @@ var terraformStateListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List Terraform state resources",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleViewer); err != nil {
+			return err
+		}
 		client := terraformpkg.NewClient(terraformWorkdir)
 		output, err := client.StateList()
 		if err != nil {
@@ -147,6 +172,9 @@ var terraformStateShowCmd = &cobra.Command{
 	Short: "Show Terraform state resource",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleViewer); err != nil {
+			return err
+		}
 		client := terraformpkg.NewClient(terraformWorkdir)
 		output, err := client.StateShow(args[0])
 		if err != nil {
@@ -161,6 +189,9 @@ var terraformOutputCmd = &cobra.Command{
 	Use:   "output",
 	Short: "Show Terraform outputs",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleViewer); err != nil {
+			return err
+		}
 		client := terraformpkg.NewClient(terraformWorkdir)
 		output, err := client.OutputAll()
 		if err != nil {
@@ -185,6 +216,9 @@ var terraformWorkspaceListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List Terraform workspaces",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleViewer); err != nil {
+			return err
+		}
 		client := terraformpkg.NewClient(terraformWorkdir)
 		output, err := client.WorkspaceList()
 		if err != nil {

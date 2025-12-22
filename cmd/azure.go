@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
+	authpkg "github.com/yourusername/ops-tool/pkg/auth"
 	azurepkg "github.com/yourusername/ops-tool/pkg/azure"
 )
 
@@ -35,6 +36,9 @@ var azureVMListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List Azure VMs",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleViewer); err != nil {
+			return err
+		}
 		client := azurepkg.NewClient(azureSubscription, azureResourceGroup)
 		output, err := client.ListVMs()
 		if err != nil {
@@ -50,6 +54,9 @@ var azureVMStartCmd = &cobra.Command{
 	Short: "Start an Azure VM",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleOperator); err != nil {
+			return err
+		}
 		client := azurepkg.NewClient(azureSubscription, azureResourceGroup)
 		_, err := client.StartVM(args[0])
 		if err != nil {
@@ -65,6 +72,9 @@ var azureVMStopCmd = &cobra.Command{
 	Short: "Stop an Azure VM",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleOperator); err != nil {
+			return err
+		}
 		client := azurepkg.NewClient(azureSubscription, azureResourceGroup)
 		_, err := client.StopVM(args[0])
 		if err != nil {
@@ -89,6 +99,9 @@ var azureStorageListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List Storage Accounts",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleViewer); err != nil {
+			return err
+		}
 		client := azurepkg.NewClient(azureSubscription, azureResourceGroup)
 		output, err := client.ListStorageAccounts()
 		if err != nil {
@@ -113,6 +126,9 @@ var azureDatabaseListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List SQL Databases",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleViewer); err != nil {
+			return err
+		}
 		client := azurepkg.NewClient(azureSubscription, azureResourceGroup)
 		output, err := client.ListDatabases()
 		if err != nil {
@@ -137,6 +153,9 @@ var azureAppServiceListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List App Services",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleViewer); err != nil {
+			return err
+		}
 		client := azurepkg.NewClient(azureSubscription, azureResourceGroup)
 		output, err := client.ListAppServices()
 		if err != nil {
@@ -161,6 +180,9 @@ var azureResourceGroupListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List Resource Groups",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleViewer); err != nil {
+			return err
+		}
 		client := azurepkg.NewClient(azureSubscription, azureResourceGroup)
 		output, err := client.ListResourceGroups()
 		if err != nil {
@@ -185,6 +207,9 @@ var azureNetworkListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List Virtual Networks",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleViewer); err != nil {
+			return err
+		}
 		client := azurepkg.NewClient(azureSubscription, azureResourceGroup)
 		output, err := client.ListNetworks()
 		if err != nil {

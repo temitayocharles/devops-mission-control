@@ -28,6 +28,10 @@ var tokenCreateCmd = &cobra.Command{
 		if _, err := userStore.GetUser(username); err != nil {
 			return err
 		}
+		// allow creating a token for yourself or require admin
+		if err := requireAdminOrSelf(cmd, username); err != nil {
+			return err
+		}
 		tok, err := tokenStore.GenerateToken(username, name, duration)
 		if err != nil {
 			return err
@@ -40,20 +44,46 @@ var tokenCreateCmd = &cobra.Command{
 var tokenListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List all API tokens",
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleViewer); err != nil {
+			return err
+		}
+		// If actor is admin, show all tokens; otherwise show only tokens belonging to actor
+		actor, _ := resolveActor(cmd)
 		toks := tokenStore.ListTokens()
-		if len(toks) == 0 {
+		filtered := make([]*authpkg.Token, 0, len(toks))
+		if actor == "" {
+			// no actor supplied -> require admin
+			if err := requireAdmin(cmd); err != nil {
+				return fmt.Errorf("forbidden: provide --actor or --token")
+			}
+			filtered = toks
+		} else {
+			// check role; if admin see all, else filter
+			u, err := userStore.GetUser(actor)
+			if err == nil && u.Role == authpkg.RoleAdmin {
+				filtered = toks
+			} else {
+				for _, t := range toks {
+					if t.User == actor {
+						filtered = append(filtered, t)
+					}
+				}
+			}
+		}
+		if len(filtered) == 0 {
 			fmt.Println("No tokens found")
-			return
+			return nil
 		}
 		fmt.Println("Tokens:")
-		for _, t := range toks {
+		for _, t := range filtered {
 			exp := "never"
 			if t.ExpiresAt != nil {
 				exp = t.ExpiresAt.String()
 			}
 			fmt.Printf("  %s (user: %s, name: %s, revoked: %v, expires: %s)\n", t.Token, t.User, t.Name, t.Revoked, exp)
 		}
+		return nil
 	},
 }
 
@@ -63,10 +93,43 @@ var tokenRevokeCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		t := args[0]
+		// only admin or token owner may revoke
+		tok, err := tokenStore.Validate(t)
+		if err != nil {
+			return err
+		}
+		if err := requireAdminOrSelf(cmd, tok.User); err != nil {
+			return err
+		}
 		if err := tokenStore.Revoke(t); err != nil {
 			return err
 		}
 		fmt.Println("✅ Token revoked")
+		return nil
+	},
+}
+
+var tokenRotateCmd = &cobra.Command{
+	Use:   "rotate",
+	Short: "Rotate an API token (issue new, revoke old)",
+	Args:  cobra.ExactArgs(1), // old token
+	RunE: func(cmd *cobra.Command, args []string) error {
+		old := args[0]
+		tok, err := tokenStore.Validate(old)
+		if err != nil {
+			return err
+		}
+		// only owner or admin may rotate
+		if err := requireAdminOrSelf(cmd, tok.User); err != nil {
+			return err
+		}
+		ttlHours, _ := cmd.Flags().GetInt("ttl")
+		duration := time.Duration(ttlHours) * time.Hour
+		newTok, err := tokenStore.Rotate(old, duration)
+		if err != nil {
+			return err
+		}
+		fmt.Printf("✅ Token rotated: %s (replaced %s)\n", newTok.Token, old)
 		return nil
 	},
 }
@@ -76,6 +139,9 @@ var tokenValidateCmd = &cobra.Command{
 	Short: "Validate an API token",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleViewer); err != nil {
+			return err
+		}
 		t := args[0]
 		tok, err := tokenStore.Validate(t)
 		if err != nil {
@@ -94,4 +160,6 @@ func init() {
 	rootCmd.AddCommand(tokenCmd)
 	tokenCmd.AddCommand(tokenCreateCmd, tokenListCmd, tokenRevokeCmd, tokenValidateCmd)
 	tokenCreateCmd.Flags().Int("ttl", 0, "TTL in hours for the token (0 = no expiry)")
+	tokenRotateCmd.Flags().Int("ttl", 0, "TTL in hours for the new token (0 = no expiry)")
+	tokenCmd.AddCommand(tokenRotateCmd)
 }

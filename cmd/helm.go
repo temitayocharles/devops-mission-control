@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
+	authpkg "github.com/yourusername/ops-tool/pkg/auth"
 	helmpkg "github.com/yourusername/ops-tool/pkg/helm"
 )
 
@@ -24,6 +25,9 @@ var helmListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List Helm releases",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleViewer); err != nil {
+			return err
+		}
 		client := helmpkg.NewClient(helmNamespace)
 		output, err := client.ListReleases()
 		if err != nil {
@@ -48,6 +52,9 @@ var helmRepoListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List Helm repositories",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleViewer); err != nil {
+			return err
+		}
 		client := helmpkg.NewClient(helmNamespace)
 		output, err := client.RepoList()
 		if err != nil {
@@ -62,6 +69,9 @@ var helmRepoUpdateCmd = &cobra.Command{
 	Use:   "update",
 	Short: "Update Helm repositories",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleViewer); err != nil {
+			return err
+		}
 		client := helmpkg.NewClient(helmNamespace)
 		output, err := client.RepoUpdate()
 		if err != nil {
@@ -77,6 +87,9 @@ var helmSearchCmd = &cobra.Command{
 	Short: "Search for Helm charts",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleViewer); err != nil {
+			return err
+		}
 		client := helmpkg.NewClient(helmNamespace)
 		output, err := client.SearchChart(args[0])
 		if err != nil {
@@ -92,6 +105,9 @@ var helmStatusCmd = &cobra.Command{
 	Short: "Get Helm release status",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleViewer); err != nil {
+			return err
+		}
 		client := helmpkg.NewClient(helmNamespace)
 		output, err := client.GetReleaseStatus(args[0])
 		if err != nil {
@@ -137,6 +153,9 @@ var helmUninstallCmd = &cobra.Command{
 	Short: "Uninstall a Helm release",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleOperator); err != nil {
+			return err
+		}
 		client := helmpkg.NewClient(helmNamespace)
 		_, err := client.UninstallRelease(args[0])
 		if err != nil {

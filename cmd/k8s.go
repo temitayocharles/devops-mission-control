@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	authpkg "github.com/yourusername/ops-tool/pkg/auth"
 	"github.com/yourusername/ops-tool/pkg/k8s"
 )
 
@@ -41,6 +42,9 @@ var k8sPodsListCmd = &cobra.Command{
 	Short: "List pods in a namespace",
 	Args:  cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleViewer); err != nil {
+			return err
+		}
 		ns := k8sNamespace
 		if len(args) > 0 {
 			ns = args[0]
@@ -62,6 +66,9 @@ var k8sPodsLogsCmd = &cobra.Command{
 	Short: "Stream logs from a pod",
 	Args:  cobra.MinimumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleViewer); err != nil {
+			return err
+		}
 		podName := args[0]
 		ns := k8sNamespace
 		if len(args) > 1 {
@@ -79,6 +86,9 @@ var k8sPodsDescribeCmd = &cobra.Command{
 	Short: "Describe a pod",
 	Args:  cobra.MinimumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleViewer); err != nil {
+			return err
+		}
 		podName := args[0]
 		ns := k8sNamespace
 		if len(args) > 1 {
@@ -101,6 +111,9 @@ var k8sPodsDeleteCmd = &cobra.Command{
 	Short: "Delete a pod",
 	Args:  cobra.MinimumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleOperator); err != nil {
+			return err
+		}
 		podName := args[0]
 		ns := k8sNamespace
 		if len(args) > 1 {
@@ -133,6 +146,9 @@ var k8sDeploymentsListCmd = &cobra.Command{
 	Short: "List deployments",
 	Args:  cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleViewer); err != nil {
+			return err
+		}
 		ns := k8sNamespace
 		if len(args) > 0 {
 			ns = args[0]
@@ -154,6 +170,9 @@ var k8sDeploymentsScaleCmd = &cobra.Command{
 	Short: "Scale a deployment",
 	Args:  cobra.RangeArgs(2, 3),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleOperator); err != nil {
+			return err
+		}
 		deploymentName := args[0]
 		replicas, err := strconv.Atoi(args[1])
 		if err != nil {
@@ -191,6 +210,9 @@ var k8sServicesListCmd = &cobra.Command{
 	Short: "List services",
 	Args:  cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleViewer); err != nil {
+			return err
+		}
 		ns := k8sNamespace
 		if len(args) > 0 {
 			ns = args[0]
@@ -221,6 +243,9 @@ var k8sNodesListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List cluster nodes",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleViewer); err != nil {
+			return err
+		}
 		client := k8s.NewClient("", k8sContext)
 		output, err := client.ListNodes()
 		if err != nil {
@@ -246,6 +271,9 @@ var k8sContextListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List available contexts",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleViewer); err != nil {
+			return err
+		}
 		client := k8s.NewClient("", "")
 		output, err := client.ListContexts()
 		if err != nil {
@@ -277,6 +305,9 @@ var k8sContextSwitchCmd = &cobra.Command{
 	Short: "Switch to a different context",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleOperator); err != nil {
+			return err
+		}
 		contextName := args[0]
 		client := k8s.NewClient("", "")
 		_, err := client.SwitchContext(contextName)
@@ -293,6 +324,9 @@ var k8sHealthCmd = &cobra.Command{
 	Use:   "health",
 	Short: "Check cluster health",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleViewer); err != nil {
+			return err
+		}
 		client := k8s.NewClient("", k8sContext)
 		health, err := client.CheckClusterHealth()
 		if err != nil {

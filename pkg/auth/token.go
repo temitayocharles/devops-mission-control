@@ -6,9 +6,11 @@ import (
 	"encoding/json"
 	"errors"
 	"os"
+	"path/filepath"
 	"sync"
 	"time"
 
+	"github.com/fsnotify/fsnotify"
 	"github.com/yourusername/ops-tool/pkg/audit"
 )
 
@@ -24,9 +26,12 @@ type Token struct {
 
 // TokenStore manages tokens persisted to disk
 type TokenStore struct {
-	mu     sync.RWMutex
-	tokens map[string]*Token
-	file   string
+	mu      sync.RWMutex
+	tokens  map[string]*Token
+	file    string
+	lastMod time.Time
+	modMu   sync.Mutex
+	stopCh  chan struct{}
 }
 
 // NewTokenStore creates a token store (default file: tokens.json)
@@ -40,6 +45,26 @@ func NewTokenStore(file string) *TokenStore {
 	}
 	ts.load()
 	return ts
+}
+
+// StartWatcher starts the background file-watcher that reloads the tokens file on changes.
+func (s *TokenStore) StartWatcher() {
+	if s.stopCh != nil {
+		return
+	}
+	s.stopCh = make(chan struct{})
+	// start file watcher (fsnotify preferred)
+	go s.watchFile()
+	// start background sweeper to revoke expired tokens
+	go s.sweeper()
+}
+
+// StopWatcher stops the background file-watcher.
+func (s *TokenStore) StopWatcher() {
+	if s.stopCh != nil {
+		close(s.stopCh)
+		s.stopCh = nil
+	}
 }
 
 func genToken(n int) (string, error) {
@@ -82,12 +107,24 @@ func (s *TokenStore) GenerateToken(user, name string, ttl time.Duration) (*Token
 
 // Validate checks a token and returns the associated token object
 func (s *TokenStore) Validate(t string) (*Token, error) {
+	// Check in-memory first.
+	s.mu.RLock()
+	tok, ok := s.tokens[t]
+	s.mu.RUnlock()
+
+	if !ok {
+		// not present in memory — attempt to reload from disk and re-check
+		s.load()
+		s.mu.RLock()
+		tok, ok = s.tokens[t]
+		s.mu.RUnlock()
+		if !ok {
+			return nil, errors.New("token not found")
+		}
+	}
+
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	tok, ok := s.tokens[t]
-	if !ok {
-		return nil, errors.New("token not found")
-	}
 	if tok.Revoked {
 		return nil, errors.New("token revoked")
 	}
@@ -113,6 +150,46 @@ func (s *TokenStore) Revoke(t string) error {
 	return err
 }
 
+// Rotate replaces an existing token with a new one for the same user/name.
+// The old token is revoked. Returns the new token.
+func (s *TokenStore) Rotate(old string, ttl time.Duration) (*Token, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	tok, ok := s.tokens[old]
+	if !ok {
+		return nil, errors.New("token not found")
+	}
+	if tok.Revoked {
+		return nil, errors.New("token revoked")
+	}
+	// generate new token
+	tstr, err := genToken(32)
+	if err != nil {
+		return nil, err
+	}
+	var exp *time.Time
+	if ttl > 0 {
+		tm := time.Now().Add(ttl)
+		exp = &tm
+	}
+	newTok := &Token{
+		Token:     tstr,
+		User:      tok.User,
+		Name:      tok.Name,
+		CreatedAt: time.Now(),
+		ExpiresAt: exp,
+		Revoked:   false,
+	}
+	// revoke old and store new
+	tok.Revoked = true
+	s.tokens[newTok.Token] = newTok
+	if err := s.save(); err != nil {
+		return nil, err
+	}
+	_ = audit.Record("token.rotate", newTok.User, newTok.Token, map[string]any{"replaced": old})
+	return newTok, nil
+}
+
 // ListTokens returns all tokens
 func (s *TokenStore) ListTokens() []*Token {
 	s.mu.RLock()
@@ -132,13 +209,26 @@ func (s *TokenStore) save() error {
 	}
 	defer f.Close()
 	enc := json.NewEncoder(f)
-	return enc.Encode(s.tokens)
+	if err := enc.Encode(s.tokens); err != nil {
+		return err
+	}
+	// update lastMod
+	if fi, err := os.Stat(s.file); err == nil {
+		s.modMu.Lock()
+		s.lastMod = fi.ModTime()
+		s.modMu.Unlock()
+	}
+	return nil
 }
 
 // load loads tokens from disk
 func (s *TokenStore) load() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	fi, err := os.Stat(s.file)
+	if err != nil {
+		return
+	}
 	f, err := os.Open(s.file)
 	if err != nil {
 		return
@@ -146,4 +236,96 @@ func (s *TokenStore) load() {
 	defer f.Close()
 	dec := json.NewDecoder(f)
 	_ = dec.Decode(&s.tokens)
+	s.modMu.Lock()
+	s.lastMod = fi.ModTime()
+	s.modMu.Unlock()
+}
+
+// watchFile uses fsnotify when available; falls back to polling if watcher fails.
+func (s *TokenStore) watchFile() {
+	// attempt fsnotify watcher
+	watcher, err := fsnotify.NewWatcher()
+	if err == nil {
+		defer watcher.Close()
+		dir := filepath.Dir(s.file)
+		// watch the directory so we see creates/renames
+		if err := watcher.Add(dir); err == nil {
+			for {
+				select {
+				case ev, ok := <-watcher.Events:
+					if !ok {
+						return
+					}
+					// if the event is for our file and it's a write/create/rename, reload
+					if filepath.Clean(ev.Name) == filepath.Clean(s.file) {
+						if ev.Op&(fsnotify.Write|fsnotify.Create|fsnotify.Rename) != 0 {
+							s.load()
+						}
+					}
+				case err, ok := <-watcher.Errors:
+					if !ok {
+						return
+					}
+					_ = audit.Record("tokenwatch.error", "", s.file, map[string]any{"error": err.Error()})
+				case <-s.stopCh:
+					return
+				}
+			}
+		}
+	}
+	// fallback: polling
+	ticker := time.NewTicker(1 * time.Second)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ticker.C:
+			fi, err := os.Stat(s.file)
+			if err != nil {
+				continue
+			}
+			s.modMu.Lock()
+			lm := s.lastMod
+			s.modMu.Unlock()
+			if fi.ModTime().After(lm) {
+				s.load()
+			}
+		case <-s.stopCh:
+			return
+		}
+	}
+}
+
+// sweeper periodically revokes expired tokens and persists changes.
+func (s *TokenStore) sweeper() {
+	ticker := time.NewTicker(1 * time.Minute)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ticker.C:
+			now := time.Now()
+			changed := false
+			s.mu.Lock()
+			for k, t := range s.tokens {
+				if t.Revoked {
+					continue
+				}
+				if t.ExpiresAt != nil && now.After(*t.ExpiresAt) {
+					t.Revoked = true
+					_ = audit.Record("token.expire.revoke", t.User, t.Token, nil)
+					changed = true
+				}
+				// safety: remove entries that are revoked and older than 30 days to keep file small
+				if t.Revoked && t.CreatedAt.Add(30*24*time.Hour).Before(now) {
+					delete(s.tokens, k)
+					changed = true
+				}
+			}
+			if changed {
+				_ = s.save()
+			}
+			s.mu.Unlock()
+		case <-s.stopCh:
+			return
+		}
+	}
 }

@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	authpkg "github.com/yourusername/ops-tool/pkg/auth"
 	gitpkg "github.com/yourusername/ops-tool/pkg/git"
 )
 
@@ -23,6 +24,9 @@ var gitStatusCmd = &cobra.Command{
 	Use:   "status",
 	Short: "Show repository status",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleViewer); err != nil {
+			return err
+		}
 		short, _ := cmd.Flags().GetBool("short")
 		client := gitpkg.NewClient()
 
@@ -57,6 +61,9 @@ var gitBranchListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List branches",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleViewer); err != nil {
+			return err
+		}
 		all, _ := cmd.Flags().GetBool("all")
 		client := gitpkg.NewClient()
 		output, err := client.ListBranches(all)
@@ -73,6 +80,9 @@ var gitBranchCurrentCmd = &cobra.Command{
 	Use:   "current",
 	Short: "Show current branch",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleViewer); err != nil {
+			return err
+		}
 		client := gitpkg.NewClient()
 		branch, err := client.GetCurrentBranch()
 		if err != nil {
@@ -89,6 +99,9 @@ var gitBranchCreateCmd = &cobra.Command{
 	Short: "Create a new branch",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleOperator); err != nil {
+			return err
+		}
 		client := gitpkg.NewClient()
 		output, err := client.CreateBranch(args[0])
 		if err != nil {
@@ -105,6 +118,9 @@ var gitBranchSwitchCmd = &cobra.Command{
 	Short: "Switch to a branch",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleOperator); err != nil {
+			return err
+		}
 		client := gitpkg.NewClient()
 		_, err := client.SwitchBranch(args[0])
 		if err != nil {
@@ -121,6 +137,9 @@ var gitBranchDeleteCmd = &cobra.Command{
 	Short: "Delete a branch",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleOperator); err != nil {
+			return err
+		}
 		force, _ := cmd.Flags().GetBool("force")
 		client := gitpkg.NewClient()
 		output, err := client.DeleteBranch(args[0], force)
@@ -138,6 +157,9 @@ var gitAddCmd = &cobra.Command{
 	Short: "Stage changes",
 	Args:  cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleOperator); err != nil {
+			return err
+		}
 		client := gitpkg.NewClient()
 
 		var output string
@@ -162,6 +184,9 @@ var gitCommitCmd = &cobra.Command{
 	Short: "Commit changes",
 	Args:  cobra.MinimumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleOperator); err != nil {
+			return err
+		}
 		all, _ := cmd.Flags().GetBool("all")
 		client := gitpkg.NewClient()
 
@@ -189,6 +214,9 @@ var gitPushCmd = &cobra.Command{
 	Short: "Push changes to remote",
 	Args:  cobra.MaximumNArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleOperator); err != nil {
+			return err
+		}
 		force, _ := cmd.Flags().GetBool("force")
 		client := gitpkg.NewClient()
 
@@ -223,6 +251,9 @@ var gitPullCmd = &cobra.Command{
 	Short: "Pull changes from remote",
 	Args:  cobra.MaximumNArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleViewer); err != nil {
+			return err
+		}
 		rebase, _ := cmd.Flags().GetBool("rebase")
 		client := gitpkg.NewClient()
 
@@ -256,6 +287,9 @@ var gitLogCmd = &cobra.Command{
 	Use:   "log",
 	Short: "Show commit log",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleViewer); err != nil {
+			return err
+		}
 		maxCount, _ := cmd.Flags().GetInt("count")
 		client := gitpkg.NewClient()
 		output, err := client.GetLog(maxCount)
@@ -272,6 +306,9 @@ var gitDiffCmd = &cobra.Command{
 	Use:   "diff",
 	Short: "Show changes",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleViewer); err != nil {
+			return err
+		}
 		staged, _ := cmd.Flags().GetBool("staged")
 		client := gitpkg.NewClient()
 		output, err := client.GetDiff(staged)
@@ -288,6 +325,9 @@ var gitRemoteCmd = &cobra.Command{
 	Use:   "remote",
 	Short: "Manage remotes",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleViewer); err != nil {
+			return err
+		}
 		client := gitpkg.NewClient()
 		output, err := client.GetRemoteList()
 		if err != nil {
@@ -303,6 +343,9 @@ var gitContributorsCmd = &cobra.Command{
 	Use:   "contributors",
 	Short: "Show contributors",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleViewer); err != nil {
+			return err
+		}
 		client := gitpkg.NewClient()
 		output, err := client.GetContributors()
 		if err != nil {
@@ -328,6 +371,9 @@ var gitTagListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List tags",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleViewer); err != nil {
+			return err
+		}
 		client := gitpkg.NewClient()
 		output, err := client.GetTags()
 		if err != nil {
@@ -344,6 +390,9 @@ var gitTagCreateCmd = &cobra.Command{
 	Short: "Create a tag",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := requireMinRole(cmd, authpkg.RoleOperator); err != nil {
+			return err
+		}
 		message, _ := cmd.Flags().GetString("message")
 		client := gitpkg.NewClient()
 		output, err := client.CreateTag(args[0], message)
