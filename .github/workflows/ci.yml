@@ -1,4 +1,69 @@
-name: CI/CD
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
+
+      - name: Verify go version
+        run: go version
+
+      - name: Check formatting
+        run: |
+          echo "Checking gofmt..."
+          test -z "$(gofmt -l .)" || (gofmt -w . && echo "gofmt changed files; please format locally" && exit 1)
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Run tests
+        run: go test ./... -v
+
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v4
+        with:
+          version: v1.59.0
+          args: --timeout=5m
+
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
+
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Build binary
+        run: go build -o ops-tool .
+
+```
+```
+    - name: Run golangci-lint
+      uses: golangci/golangci-lint-action@v4
+      with:
+        version: v1.59.0
+        args: --timeout=5m
 
 on:
   push:
