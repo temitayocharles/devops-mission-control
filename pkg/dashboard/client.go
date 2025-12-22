@@ -39,7 +39,7 @@ func NewDashboard(addr string, store *metrics.MetricsStore) *Dashboard {
 // auth resources for HTTP handlers (use same backing files)
 var (
 	httpTokenStore *authpkg.TokenStore
-	httpUserStore  = authpkg.NewUserStore()
+	httpUserStore  = authpkg.NewUserStore("")
 )
 
 // role hierarchy for simple checks
@@ -60,17 +60,17 @@ func authMiddleware(minRole authpkg.Role, h http.HandlerFunc) http.HandlerFunc {
 			// expect `Bearer <token>`
 			if strings.HasPrefix(authHeader, "Bearer ") {
 				token := strings.TrimSpace(strings.TrimPrefix(authHeader, "Bearer "))
-				if token != "" {
-					tok, err := httpTokenStore.Validate(token)
-					if err != nil {
-						if rerr := audit.Record("auth.check", "", r.URL.Path, map[string]any{"allowed": false, "reason": "invalid token"}); rerr != nil {
-							fmt.Fprintf(os.Stderr, "audit record failed: %v\n", rerr)
+					if token != "" {
+						tok, err := httpTokenStore.Validate(token)
+						if err != nil {
+							if rerr := audit.Record("", "auth.check", "", r.URL.Path, map[string]any{"allowed": false, "reason": "invalid token"}); rerr != nil {
+								fmt.Fprintf(os.Stderr, "audit record failed: %v\n", rerr)
+							}
+							http.Error(w, "invalid token", http.StatusUnauthorized)
+							return
 						}
-						http.Error(w, "invalid token", http.StatusUnauthorized)
-						return
+						actor = tok.User
 					}
-					actor = tok.User
-				}
 			}
 		}
 		// fallback to X-Actor header
@@ -78,7 +78,7 @@ func authMiddleware(minRole authpkg.Role, h http.HandlerFunc) http.HandlerFunc {
 			actor = r.Header.Get("X-Actor")
 		}
 		if actor == "" {
-			if err := audit.Record("auth.check", "", r.URL.Path, map[string]any{"allowed": false, "reason": "no actor"}); err != nil {
+			if err := audit.Record("", "auth.check", "", r.URL.Path, map[string]any{"allowed": false, "reason": "no actor"}); err != nil {
 				fmt.Fprintf(os.Stderr, "audit record failed: %v\n", err)
 			}
 			http.Error(w, "missing actor or token", http.StatusUnauthorized)
@@ -86,21 +86,21 @@ func authMiddleware(minRole authpkg.Role, h http.HandlerFunc) http.HandlerFunc {
 		}
 		u, err := httpUserStore.GetUser(actor)
 		if err != nil {
-			if rerr := audit.Record("auth.check", actor, r.URL.Path, map[string]any{"allowed": false, "reason": "actor not found"}); rerr != nil {
+			if rerr := audit.Record("", "auth.check", actor, r.URL.Path, map[string]any{"allowed": false, "reason": "actor not found"}); rerr != nil {
 				fmt.Fprintf(os.Stderr, "audit record failed: %v\n", rerr)
 			}
 			http.Error(w, "actor not found", http.StatusUnauthorized)
 			return
 		}
 		if roleLevel[u.Role] < roleLevel[minRole] {
-			if rerr := audit.Record("auth.check", actor, r.URL.Path, map[string]any{"allowed": false, "required": minRole, "have": u.Role}); rerr != nil {
+			if rerr := audit.Record("", "auth.check", actor, r.URL.Path, map[string]any{"allowed": false, "required": minRole, "have": u.Role}); rerr != nil {
 				fmt.Fprintf(os.Stderr, "audit record failed: %v\n", rerr)
 			}
 			http.Error(w, "forbidden", http.StatusForbidden)
 			return
 		}
 		// allowed
-		if err := audit.Record("auth.check", actor, r.URL.Path, map[string]any{"allowed": true, "have": u.Role}); err != nil {
+		if err := audit.Record("", "auth.check", actor, r.URL.Path, map[string]any{"allowed": true, "have": u.Role}); err != nil {
 			fmt.Fprintf(os.Stderr, "audit record failed: %v\n", err)
 		}
 		h(w, r)
@@ -185,7 +185,7 @@ func (d *Dashboard) Start() error {
 				log.Printf("failed to close dashboard.error.log: %v", cerr)
 			}
 		}
-		if rerr := audit.Record("dashboard.error", "", d.addr, map[string]any{"error": err.Error()}); rerr != nil {
+		if rerr := audit.Record("", "dashboard.error", "", d.addr, map[string]any{"error": err.Error()}); rerr != nil {
 			log.Printf("audit record failed: %v", rerr)
 		}
 		return err
@@ -300,9 +300,9 @@ func (d *Dashboard) handleMetrics(w http.ResponseWriter, r *http.Request) {
 	metrics := d.metricsStore.GetMetrics()
 	if err := json.NewEncoder(w).Encode(metrics); err != nil {
 		http.Error(w, "failed to encode metrics", http.StatusInternalServerError)
-		if rerr := audit.Record("dashboard.error", "", d.addr, map[string]any{"error": err.Error()}); rerr != nil {
-			fmt.Fprintf(os.Stderr, "audit record failed: %v\n", rerr)
-		}
+			if rerr := audit.Record("", "dashboard.error", "", d.addr, map[string]any{"error": err.Error()}); rerr != nil {
+				fmt.Fprintf(os.Stderr, "audit record failed: %v\n", rerr)
+			}
 		return
 	}
 }
@@ -313,7 +313,7 @@ func (d *Dashboard) handleEvents(w http.ResponseWriter, r *http.Request) {
 	events := d.metricsStore.GetEvents()
 	if err := json.NewEncoder(w).Encode(events); err != nil {
 		http.Error(w, "failed to encode events", http.StatusInternalServerError)
-		if rerr := audit.Record("dashboard.error", "", d.addr, map[string]any{"error": err.Error()}); rerr != nil {
+		if rerr := audit.Record("", "dashboard.error", "", d.addr, map[string]any{"error": err.Error()}); rerr != nil {
 			fmt.Fprintf(os.Stderr, "audit record failed: %v\n", rerr)
 		}
 		return
@@ -326,9 +326,9 @@ func (d *Dashboard) handleAlerts(w http.ResponseWriter, r *http.Request) {
 	alerts := d.metricsStore.GetAlerts()
 	if err := json.NewEncoder(w).Encode(alerts); err != nil {
 		http.Error(w, "failed to encode alerts", http.StatusInternalServerError)
-		if rerr := audit.Record("dashboard.error", "", d.addr, map[string]any{"error": err.Error()}); rerr != nil {
-			fmt.Fprintf(os.Stderr, "audit record failed: %v\n", rerr)
-		}
+			if rerr := audit.Record("", "dashboard.error", "", d.addr, map[string]any{"error": err.Error()}); rerr != nil {
+				fmt.Fprintf(os.Stderr, "audit record failed: %v\n", rerr)
+			}
 		return
 	}
 }
@@ -339,7 +339,7 @@ func (d *Dashboard) handleStats(w http.ResponseWriter, r *http.Request) {
 	stats := d.metricsStore.GetStats()
 	if err := json.NewEncoder(w).Encode(stats); err != nil {
 		http.Error(w, "failed to encode stats", http.StatusInternalServerError)
-		if rerr := audit.Record("dashboard.error", "", d.addr, map[string]any{"error": err.Error()}); rerr != nil {
+		if rerr := audit.Record("", "dashboard.error", "", d.addr, map[string]any{"error": err.Error()}); rerr != nil {
 			fmt.Fprintf(os.Stderr, "audit record failed: %v\n", rerr)
 		}
 		return
@@ -356,7 +356,7 @@ func (d *Dashboard) handleHealth(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := json.NewEncoder(w).Encode(response); err != nil {
 		http.Error(w, "failed to encode health", http.StatusInternalServerError)
-		if rerr := audit.Record("dashboard.error", "", d.addr, map[string]any{"error": err.Error()}); rerr != nil {
+		if rerr := audit.Record("", "dashboard.error", "", d.addr, map[string]any{"error": err.Error()}); rerr != nil {
 			fmt.Fprintf(os.Stderr, "audit record failed: %v\n", rerr)
 		}
 		return

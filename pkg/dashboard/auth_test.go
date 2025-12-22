@@ -25,11 +25,11 @@ func TestAuthMiddleware_AllowsViewerWithToken(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	us := authpkg.NewUserStore()
+	us := authpkg.NewUserStore("")
 	if err := us.AddUser("alice", "pw", authpkg.RoleViewer); err != nil {
 		t.Fatal(err)
 	}
-	ts := authpkg.NewTokenStore("tokens.json")
+	ts := authpkg.NewTokenStore("", "tokens.json")
 	tok, err := ts.GenerateToken("alice", "test", 0)
 	if err != nil {
 		t.Fatal(err)
@@ -71,7 +71,7 @@ func TestAuthMiddleware_RejectsLowerRole(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	us := authpkg.NewUserStore()
+	us := authpkg.NewUserStore("")
 	if err := us.AddUser("bob", "pw", authpkg.RoleViewer); err != nil {
 		t.Fatal(err)
 	}

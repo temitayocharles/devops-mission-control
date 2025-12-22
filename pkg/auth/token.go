@@ -18,6 +18,7 @@ import (
 // Token represents an API token
 type Token struct {
 	Token     string     `json:"token"`
+	TenantID  string     `json:"tenant_id,omitempty"`
 	User      string     `json:"user"`
 	Name      string     `json:"name"`
 	CreatedAt time.Time  `json:"created_at"`
@@ -33,16 +34,22 @@ type TokenStore struct {
 	lastMod time.Time
 	modMu   sync.Mutex
 	stopCh  chan struct{}
+	tenant  string
 }
 
 // NewTokenStore creates a token store (default file: tokens.json)
-func NewTokenStore(file string) *TokenStore {
+func NewTokenStore(tenant, file string) *TokenStore {
 	if file == "" {
-		file = "tokens.json"
+		if tenant == "" {
+			file = "tokens.json"
+		} else {
+			file = fmt.Sprintf("tokens.%s.json", tenant)
+		}
 	}
 	ts := &TokenStore{
 		tokens: make(map[string]*Token),
 		file:   file,
+		tenant: tenant,
 	}
 	ts.load()
 	return ts
@@ -92,6 +99,7 @@ func (s *TokenStore) GenerateToken(user, name string, ttl time.Duration) (*Token
 	}
 	tok := &Token{
 		Token:     tstr,
+		TenantID:  s.tenant,
 		User:      user,
 		Name:      name,
 		CreatedAt: time.Now(),
@@ -102,7 +110,7 @@ func (s *TokenStore) GenerateToken(user, name string, ttl time.Duration) (*Token
 	if err := s.save(); err != nil {
 		return nil, err
 	}
-	if err := audit.Record("token.create", user, tok.Token, map[string]any{"name": name}); err != nil {
+	if err := audit.Record(s.tenant, "token.create", user, tok.Token, map[string]any{"name": name}); err != nil {
 		fmt.Fprintf(os.Stderr, "audit record failed: %v\n", err)
 	}
 	return tok, nil
@@ -148,7 +156,7 @@ func (s *TokenStore) Revoke(t string) error {
 	tok.Revoked = true
 	err := s.save()
 	if err == nil {
-		if rerr := audit.Record("token.revoke", tok.User, tok.Token, nil); rerr != nil {
+		if rerr := audit.Record(s.tenant, "token.revoke", tok.User, tok.Token, nil); rerr != nil {
 			fmt.Fprintf(os.Stderr, "audit record failed: %v\n", rerr)
 		}
 	}
@@ -191,7 +199,7 @@ func (s *TokenStore) Rotate(old string, ttl time.Duration) (*Token, error) {
 	if err := s.save(); err != nil {
 		return nil, err
 	}
-	if rerr := audit.Record("token.rotate", newTok.User, newTok.Token, map[string]any{"replaced": old}); rerr != nil {
+	if rerr := audit.Record(s.tenant, "token.rotate", newTok.User, newTok.Token, map[string]any{"replaced": old}); rerr != nil {
 		fmt.Fprintf(os.Stderr, "audit record failed: %v\n", rerr)
 	}
 	return newTok, nil

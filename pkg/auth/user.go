@@ -25,6 +25,7 @@ const (
 // User represents a system user
 type User struct {
 	Username     string    `json:"username"`
+	TenantID     string    `json:"tenant_id,omitempty"`
 	PasswordHash string    `json:"password_hash"`
 	Role         Role      `json:"role"`
 	CreatedAt    time.Time `json:"created_at"`
@@ -36,13 +37,19 @@ type UserStore struct {
 	mu    sync.RWMutex
 	users map[string]*User
 	file  string
+	tenant string
 }
 
 // NewUserStore creates a new user store
-func NewUserStore() *UserStore {
+func NewUserStore(tenant string) *UserStore {
+	file := "users.json"
+	if tenant != "" {
+		file = fmt.Sprintf("users.%s.json", tenant)
+	}
 	store := &UserStore{
-		users: make(map[string]*User),
-		file:  "users.json",
+		users:  make(map[string]*User),
+		file:   file,
+		tenant: tenant,
 	}
 	store.load()
 	return store
@@ -58,6 +65,7 @@ func (s *UserStore) AddUser(username, password string, role Role) error {
 	hash := hashPassword(password)
 	s.users[username] = &User{
 		Username:     username,
+		TenantID:     s.tenant,
 		PasswordHash: hash,
 		Role:         role,
 		CreatedAt:    time.Now(),
@@ -66,7 +74,7 @@ func (s *UserStore) AddUser(username, password string, role Role) error {
 	if err := s.save(); err != nil {
 		return err
 	}
-	if err := audit.Record("user.create", username, username, map[string]any{"role": role}); err != nil {
+	if err := audit.Record(s.tenant, "user.create", username, username, map[string]any{"role": role}); err != nil {
 		fmt.Fprintf(os.Stderr, "audit record failed: %v\n", err)
 	}
 	return nil
@@ -120,7 +128,7 @@ func (s *UserStore) SetUserActive(username string, active bool) error {
 	if err := s.save(); err != nil {
 		return err
 	}
-	if err := audit.Record("user.set_active", username, username, map[string]any{"active": active}); err != nil {
+	if err := audit.Record(s.tenant, "user.set_active", username, username, map[string]any{"active": active}); err != nil {
 		fmt.Fprintf(os.Stderr, "audit record failed: %v\n", err)
 	}
 	return nil
@@ -138,7 +146,7 @@ func (s *UserStore) SetUserRole(username string, role Role) error {
 	if err := s.save(); err != nil {
 		return err
 	}
-	if err := audit.Record("user.set_role", username, username, map[string]any{"role": role}); err != nil {
+	if err := audit.Record(s.tenant, "user.set_role", username, username, map[string]any{"role": role}); err != nil {
 		fmt.Fprintf(os.Stderr, "audit record failed: %v\n", err)
 	}
 	return nil
@@ -155,7 +163,7 @@ func (s *UserStore) DeleteUser(username string) error {
 	if err := s.save(); err != nil {
 		return err
 	}
-	if err := audit.Record("user.delete", username, username, nil); err != nil {
+	if err := audit.Record(s.tenant, "user.delete", username, username, nil); err != nil {
 		fmt.Fprintf(os.Stderr, "audit record failed: %v\n", err)
 	}
 	return nil

@@ -11,6 +11,7 @@ import (
 // Entry represents an audit log entry
 type Entry struct {
 	Timestamp time.Time      `json:"timestamp"`
+	TenantID  string         `json:"tenant_id,omitempty"`
 	Action    string         `json:"action"`
 	Actor     string         `json:"actor,omitempty"`
 	Target    string         `json:"target,omitempty"`
@@ -23,11 +24,13 @@ var (
 )
 
 // Record appends an audit entry to the audit file (JSON Lines)
-func Record(action, actor, target string, details map[string]any) error {
+// tenant may be empty for global entries.
+func Record(tenant, action, actor, target string, details map[string]any) error {
 	mu.Lock()
 	defer mu.Unlock()
 	e := Entry{
 		Timestamp: time.Now(),
+		TenantID:  tenant,
 		Action:    action,
 		Actor:     actor,
 		Target:    target,

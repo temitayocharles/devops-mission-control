@@ -39,14 +39,14 @@ func TestDashboardPicksUpRuntimeToken(t *testing.T) {
 	}()
 
 	// create user store and add a user (NewUserStore has no args now)
-	us := authpkg.NewUserStore()
+	us := authpkg.NewUserStore("")
 	if err := us.AddUser("alice", "password", authpkg.RoleViewer); err != nil {
 		t.Fatal(err)
 	}
 	httpUserStore = us
 
 	// start a token store (this will create tokens.json file path)
-	ts := authpkg.NewTokenStore("tokens.json")
+	ts := authpkg.NewTokenStore("", "tokens.json")
 	httpTokenStore = ts
 
 	// start HTTP handler using authMiddleware (viewer for reads)
@@ -63,7 +63,7 @@ func TestDashboardPicksUpRuntimeToken(t *testing.T) {
 	}
 
 	// create a token using a separate TokenStore instance that writes to the same file
-	ts2 := authpkg.NewTokenStore("tokens.json")
+	ts2 := authpkg.NewTokenStore("", "tokens.json")
 	tok, err := ts2.GenerateToken("alice", "runtime-token", time.Hour)
 	if err != nil {
 		t.Fatal(err)

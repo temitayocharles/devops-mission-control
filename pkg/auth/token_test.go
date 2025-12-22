@@ -14,7 +14,7 @@ func TestTokenLifecycle(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	us := NewUserStore()
+	us := NewUserStore("")
 	if err := us.AddUser("u1", "pw", RoleViewer); err != nil {
 		t.Fatal(err)
 	}
