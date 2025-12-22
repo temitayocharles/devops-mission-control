@@ -205,8 +205,8 @@ func (c *Client) CheckClusterHealth() (map[string]string, error) {
 	}
 
 	// Check API server
-	_, err := c.execKubectl("get", "componentstatuses")
-	if err == nil {
+	_, err1 := c.execKubectl("get", "componentstatuses")
+	if err1 == nil {
 		health["api"] = "OK"
 	} else {
 		health["api"] = "ERROR"
