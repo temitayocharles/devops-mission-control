@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 	"strconv"
 	"strings"
 
@@ -280,7 +279,7 @@ var k8sContextSwitchCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		contextName := args[0]
 		client := k8s.NewClient("", "")
-		output, err := client.SwitchContext(contextName)
+		_, err := client.SwitchContext(contextName)
 		if err != nil {
 			return fmt.Errorf("failed to switch context: %w", err)
 		}

@@ -106,7 +106,7 @@ var gitBranchSwitchCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		client := gitpkg.NewClient()
-		output, err := client.SwitchBranch(args[0])
+		_, err := client.SwitchBranch(args[0])
 		if err != nil {
 			return fmt.Errorf("failed to switch branch: %w", err)
 		}
