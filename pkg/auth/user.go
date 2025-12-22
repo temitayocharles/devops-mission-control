@@ -34,9 +34,9 @@ type User struct {
 
 // UserStore manages users and roles
 type UserStore struct {
-	mu    sync.RWMutex
-	users map[string]*User
-	file  string
+	mu     sync.RWMutex
+	users  map[string]*User
+	file   string
 	tenant string
 }
 

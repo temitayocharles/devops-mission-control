@@ -26,8 +26,8 @@ func TestRequireMinRoleAndResolveActor(t *testing.T) {
 	})
 
 	// reinitialize stores to use temp dir files
-	userStore = authpkg.NewUserStore()
-	tokenStore = authpkg.NewTokenStore(filepath.Join(tmp, "tokens.json"))
+	userStore = authpkg.NewUserStore("")
+	tokenStore = authpkg.NewTokenStore("", filepath.Join(tmp, "tokens.json"))
 
 	// create users
 	if err := userStore.AddUser("admin", "pw", authpkg.RoleAdmin); err != nil {
@@ -74,8 +74,8 @@ func TestRequireAdminOrSelfAndResolveActorWithToken(t *testing.T) {
 		}
 	})
 
-	userStore = authpkg.NewUserStore()
-	tokenStore = authpkg.NewTokenStore(filepath.Join(tmp, "tokens.json"))
+	userStore = authpkg.NewUserStore("")
+	tokenStore = authpkg.NewTokenStore("", filepath.Join(tmp, "tokens.json"))
 
 	if err := userStore.AddUser("alice", "pw", authpkg.RoleOperator); err != nil {
 		t.Fatalf("add alice: %v", err)
@@ -137,8 +137,8 @@ func TestRequireMinRole_NoActor(t *testing.T) {
 		}
 	})
 
-	userStore = authpkg.NewUserStore()
-	tokenStore = authpkg.NewTokenStore(filepath.Join(tmp, "tokens.json"))
+	userStore = authpkg.NewUserStore("")
+	tokenStore = authpkg.NewTokenStore("", filepath.Join(tmp, "tokens.json"))
 
 	cmd := &cobra.Command{}
 	cmd.Flags().String("actor", "", "actor")
@@ -161,8 +161,8 @@ func TestRequireAdmin_InvalidToken(t *testing.T) {
 		}
 	}()
 
-	userStore = authpkg.NewUserStore()
-	tokenStore = authpkg.NewTokenStore(filepath.Join(tmp, "tokens.json"))
+	userStore = authpkg.NewUserStore("")
+	tokenStore = authpkg.NewTokenStore("", filepath.Join(tmp, "tokens.json"))
 
 	// set a token that doesn't exist
 	cmd := &cobra.Command{}

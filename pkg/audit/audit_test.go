@@ -14,7 +14,7 @@ func TestRecordAndRead(t *testing.T) {
 	}
 
 	// record
-	if err := Record("test.action", "bob", "target", map[string]any{"k": "v"}); err != nil {
+	if err := Record("", "test.action", "bob", "target", map[string]any{"k": "v"}); err != nil {
 		t.Fatal(err)
 	}
 	entries, err := ReadEntries("")

@@ -293,7 +293,7 @@ func (s *TokenStore) watchFile() {
 					if !ok {
 						return
 					}
-					if rerr := audit.Record("tokenwatch.error", "", s.file, map[string]any{"error": err.Error()}); rerr != nil {
+					if rerr := audit.Record(s.tenant, "tokenwatch.error", "", s.file, map[string]any{"error": err.Error()}); rerr != nil {
 						fmt.Fprintf(os.Stderr, "audit record failed: %v\n", rerr)
 					}
 				case <-s.stopCh:
@@ -340,7 +340,7 @@ func (s *TokenStore) sweeper() {
 				}
 				if t.ExpiresAt != nil && now.After(*t.ExpiresAt) {
 					t.Revoked = true
-					if rerr := audit.Record("token.expire.revoke", t.User, t.Token, nil); rerr != nil {
+					if rerr := audit.Record(s.tenant, "token.expire.revoke", t.User, t.Token, nil); rerr != nil {
 						fmt.Fprintf(os.Stderr, "audit record failed: %v\n", rerr)
 					}
 					changed = true

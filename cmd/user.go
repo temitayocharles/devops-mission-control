@@ -6,7 +6,7 @@ import (
 	authpkg "github.com/yourusername/ops-tool/pkg/auth"
 )
 
-var userStore = authpkg.NewUserStore()
+var userStore = authpkg.NewUserStore("")
 
 var userCmd = &cobra.Command{
 	Use:   "user",

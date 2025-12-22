@@ -60,17 +60,17 @@ func authMiddleware(minRole authpkg.Role, h http.HandlerFunc) http.HandlerFunc {
 			// expect `Bearer <token>`
 			if strings.HasPrefix(authHeader, "Bearer ") {
 				token := strings.TrimSpace(strings.TrimPrefix(authHeader, "Bearer "))
-					if token != "" {
-						tok, err := httpTokenStore.Validate(token)
-						if err != nil {
-							if rerr := audit.Record("", "auth.check", "", r.URL.Path, map[string]any{"allowed": false, "reason": "invalid token"}); rerr != nil {
-								fmt.Fprintf(os.Stderr, "audit record failed: %v\n", rerr)
-							}
-							http.Error(w, "invalid token", http.StatusUnauthorized)
-							return
+				if token != "" {
+					tok, err := httpTokenStore.Validate(token)
+					if err != nil {
+						if rerr := audit.Record("", "auth.check", "", r.URL.Path, map[string]any{"allowed": false, "reason": "invalid token"}); rerr != nil {
+							fmt.Fprintf(os.Stderr, "audit record failed: %v\n", rerr)
 						}
-						actor = tok.User
+						http.Error(w, "invalid token", http.StatusUnauthorized)
+						return
 					}
+					actor = tok.User
+				}
 			}
 		}
 		// fallback to X-Actor header
@@ -147,7 +147,7 @@ func (d *Dashboard) Start() error {
 
 	// ensure token store is initialized and watcher started for the dashboard
 	if httpTokenStore == nil {
-		httpTokenStore = authpkg.NewTokenStore("tokens.json")
+		httpTokenStore = authpkg.NewTokenStore("", "tokens.json")
 		httpTokenStore.StartWatcher()
 	}
 
@@ -240,7 +240,7 @@ func (d *Dashboard) Start() error {
 					log.Printf("failed to close dashboard.error.log: %v", cerr)
 				}
 			}
-			if rerr := audit.Record("dashboard.error", "", d.addr, map[string]any{"error": err.Error()}); rerr != nil {
+			if rerr := audit.Record("", "dashboard.error", "", d.addr, map[string]any{"error": err.Error()}); rerr != nil {
 				log.Printf("audit record failed: %v", rerr)
 			}
 			return err
@@ -300,9 +300,9 @@ func (d *Dashboard) handleMetrics(w http.ResponseWriter, r *http.Request) {
 	metrics := d.metricsStore.GetMetrics()
 	if err := json.NewEncoder(w).Encode(metrics); err != nil {
 		http.Error(w, "failed to encode metrics", http.StatusInternalServerError)
-			if rerr := audit.Record("", "dashboard.error", "", d.addr, map[string]any{"error": err.Error()}); rerr != nil {
-				fmt.Fprintf(os.Stderr, "audit record failed: %v\n", rerr)
-			}
+		if rerr := audit.Record("", "dashboard.error", "", d.addr, map[string]any{"error": err.Error()}); rerr != nil {
+			fmt.Fprintf(os.Stderr, "audit record failed: %v\n", rerr)
+		}
 		return
 	}
 }
@@ -326,9 +326,9 @@ func (d *Dashboard) handleAlerts(w http.ResponseWriter, r *http.Request) {
 	alerts := d.metricsStore.GetAlerts()
 	if err := json.NewEncoder(w).Encode(alerts); err != nil {
 		http.Error(w, "failed to encode alerts", http.StatusInternalServerError)
-			if rerr := audit.Record("", "dashboard.error", "", d.addr, map[string]any{"error": err.Error()}); rerr != nil {
-				fmt.Fprintf(os.Stderr, "audit record failed: %v\n", rerr)
-			}
+		if rerr := audit.Record("", "dashboard.error", "", d.addr, map[string]any{"error": err.Error()}); rerr != nil {
+			fmt.Fprintf(os.Stderr, "audit record failed: %v\n", rerr)
+		}
 		return
 	}
 }
@@ -373,7 +373,7 @@ func (d *Dashboard) handleAudit(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := json.NewEncoder(w).Encode(entries); err != nil {
 		http.Error(w, "failed to encode audit entries", http.StatusInternalServerError)
-		if rerr := audit.Record("dashboard.error", "", d.addr, map[string]any{"error": err.Error()}); rerr != nil {
+		if rerr := audit.Record("", "dashboard.error", "", d.addr, map[string]any{"error": err.Error()}); rerr != nil {
 			fmt.Fprintf(os.Stderr, "audit record failed: %v\n", rerr)
 		}
 		return

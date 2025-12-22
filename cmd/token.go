@@ -8,7 +8,7 @@ import (
 	authpkg "github.com/yourusername/ops-tool/pkg/auth"
 )
 
-var tokenStore = authpkg.NewTokenStore("tokens.json")
+var tokenStore = authpkg.NewTokenStore("", "tokens.json")
 
 var tokenCmd = &cobra.Command{
 	Use:   "token",
