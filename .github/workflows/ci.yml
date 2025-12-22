@@ -18,9 +18,13 @@ jobs:
           path: |
             ~/.cache/go-build
             ~/.cache/go/pkg/mod
+            ${{ env.GOMODCACHE }}
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-
+      - name: Set GOMODCACHE
+        run: |
+          echo "GOMODCACHE=$(go env GOMODCACHE)" >> $GITHUB_ENV
 
       - name: Set up Go
         uses: actions/setup-go@v4
