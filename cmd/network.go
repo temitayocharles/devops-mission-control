@@ -253,11 +253,11 @@ var networkWhoisCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(networkCmd)
-	
+
 	// DNS commands as subgroup
 	networkCmd.AddCommand(networkDNSCmd)
 	networkDNSCmd.AddCommand(networkNslookupCmd, networkDigCmd, networkReverseCmd)
-	
+
 	// All other commands
 	networkCmd.AddCommand(
 		networkPingCmd,

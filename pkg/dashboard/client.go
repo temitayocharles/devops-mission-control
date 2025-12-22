@@ -12,12 +12,12 @@ import (
 
 // Dashboard serves the ops-tool web dashboard
 type Dashboard struct {
-	addr          string
-	metricsStore  *metrics.MetricsStore
-	mu            sync.RWMutex
-	isRunning     bool
-	stopChan      chan bool
-	refreshRate   time.Duration
+	addr         string
+	metricsStore *metrics.MetricsStore
+	mu           sync.RWMutex
+	isRunning    bool
+	stopChan     chan bool
+	refreshRate  time.Duration
 }
 
 // NewDashboard creates a new dashboard

@@ -150,11 +150,11 @@ var helmUninstallCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(helmCmd)
 	helmCmd.AddCommand(helmListCmd, helmSearchCmd, helmStatusCmd, helmHistoryCmd, helmValuesCmd, helmUninstallCmd)
-	
+
 	// Repo commands
 	helmCmd.AddCommand(helmRepoCmd)
 	helmRepoCmd.AddCommand(helmRepoListCmd, helmRepoUpdateCmd)
-	
+
 	// Flags
 	helmCmd.PersistentFlags().StringVarP(&helmNamespace, "namespace", "n", "default", "Kubernetes namespace")
 }

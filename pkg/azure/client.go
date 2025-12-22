@@ -9,7 +9,7 @@ import (
 
 // Client wraps Azure operations
 type Client struct {
-	Subscription string
+	Subscription  string
 	ResourceGroup string
 }
 
@@ -19,7 +19,7 @@ func NewClient(subscription, resourceGroup string) *Client {
 		subscription = getDefaultSubscription()
 	}
 	return &Client{
-		Subscription: subscription,
+		Subscription:  subscription,
 		ResourceGroup: resourceGroup,
 	}
 }
@@ -148,7 +148,7 @@ func (c *Client) ListResourceGroups() (string, error) {
 }
 
 func (c *Client) GetResourceGroupInfo(name string) (string, error) {
-	return c.execAZ("group", "show", "--name=" + name)
+	return c.execAZ("group", "show", "--name="+name)
 }
 
 // Network operations

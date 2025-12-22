@@ -61,19 +61,19 @@ func (c *Client) ListInstances() (string, error) {
 }
 
 func (c *Client) DescribeInstance(name string) (string, error) {
-	return c.execGcloud("compute", "instances", "describe", name, "--zone=" + c.Region)
+	return c.execGcloud("compute", "instances", "describe", name, "--zone="+c.Region)
 }
 
 func (c *Client) StartInstance(name string) (string, error) {
-	return c.execGcloud("compute", "instances", "start", name, "--zone=" + c.Region)
+	return c.execGcloud("compute", "instances", "start", name, "--zone="+c.Region)
 }
 
 func (c *Client) StopInstance(name string) (string, error) {
-	return c.execGcloud("compute", "instances", "stop", name, "--zone=" + c.Region)
+	return c.execGcloud("compute", "instances", "stop", name, "--zone="+c.Region)
 }
 
 func (c *Client) DeleteInstance(name string) (string, error) {
-	return c.execGcloud("compute", "instances", "delete", name, "--zone=" + c.Region, "--quiet")
+	return c.execGcloud("compute", "instances", "delete", name, "--zone="+c.Region, "--quiet")
 }
 
 func (c *Client) ListImages() (string, error) {
@@ -93,7 +93,7 @@ func (c *Client) CreateBucket(name, location string) (string, error) {
 	if location == "" {
 		location = "us-central1"
 	}
-	return c.execGcloud("storage", "buckets", "create", "gs://"+name, "--location=" + location)
+	return c.execGcloud("storage", "buckets", "create", "gs://"+name, "--location="+location)
 }
 
 func (c *Client) DeleteBucket(name string) (string, error) {
@@ -123,11 +123,11 @@ func (c *Client) StopSQLInstance(name string) (string, error) {
 
 // Cloud Run operations
 func (c *Client) ListCloudRunServices() (string, error) {
-	return c.execGcloud("run", "services", "list", "--region=" + c.Region, "--format=table(metadata.name,status.url,status.conditions[0].lastTransitionTime)")
+	return c.execGcloud("run", "services", "list", "--region="+c.Region, "--format=table(metadata.name,status.url,status.conditions[0].lastTransitionTime)")
 }
 
 func (c *Client) DescribeCloudRunService(name string) (string, error) {
-	return c.execGcloud("run", "services", "describe", name, "--region=" + c.Region)
+	return c.execGcloud("run", "services", "describe", name, "--region="+c.Region)
 }
 
 // BigQuery operations

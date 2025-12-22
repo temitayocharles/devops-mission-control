@@ -1,8 +1,8 @@
 package main
 
 import (
-	"os"
 	"github.com/yourusername/ops-tool/cmd"
+	"os"
 )
 
 func main() {

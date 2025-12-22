@@ -10,9 +10,9 @@ import (
 )
 
 var (
-	dashboardAddr  string
-	metricsStore   *metricspkg.MetricsStore
-	dashboardInst  *dashboardpkg.Dashboard
+	dashboardAddr string
+	metricsStore  *metricspkg.MetricsStore
+	dashboardInst *dashboardpkg.Dashboard
 )
 
 var observabilityCmd = &cobra.Command{

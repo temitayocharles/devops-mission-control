@@ -1,0 +1,3 @@
+{"timestamp":"2025-12-22T01:23:25.551776-05:00","action":"user.create","actor":"testuser","target":"testuser","details":{"role":"viewer"}}
+{"timestamp":"2025-12-22T01:23:31.237624-05:00","action":"user.set_role","actor":"testuser","target":"testuser","details":{"role":"admin"}}
+{"timestamp":"2025-12-22T01:23:36.555413-05:00","action":"token.create","actor":"testuser","target":"5081a3669ee39ecafdd43a44910c6aeb2beb370fd8b9451679ceaf71028348c4","details":{"name":"mytoken"}}

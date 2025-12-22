@@ -187,30 +187,30 @@ var gcpInfoCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(gcpCmd)
-	
+
 	// Compute commands
 	gcpCmd.AddCommand(gcpComputeCmd)
 	gcpComputeCmd.AddCommand(gcpComputeListCmd, gcpComputeStartCmd, gcpComputeStopCmd)
-	
+
 	// Storage commands
 	gcpCmd.AddCommand(gcpStorageCmd)
 	gcpStorageCmd.AddCommand(gcpStorageListCmd)
-	
+
 	// SQL commands
 	gcpCmd.AddCommand(gcpSQLCmd)
 	gcpSQLCmd.AddCommand(gcpSQLListCmd)
-	
+
 	// Cloud Run commands
 	gcpCmd.AddCommand(gcpRunCmd)
 	gcpRunCmd.AddCommand(gcpRunListCmd)
-	
+
 	// IAM commands
 	gcpCmd.AddCommand(gcpIAMCmd)
 	gcpIAMCmd.AddCommand(gcpIAMAccountsCmd)
-	
+
 	// Project info
 	gcpCmd.AddCommand(gcpInfoCmd)
-	
+
 	// Flags
 	gcpCmd.PersistentFlags().StringVar(&gcpProject, "project", "", "GCP project ID")
 	gcpCmd.PersistentFlags().StringVar(&gcpRegion, "region", "us-central1", "GCP region")

@@ -14,7 +14,7 @@ var gitCmd = &cobra.Command{
 	Long:  "Manage Git repositories, branches, commits, and workflows",
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
-			 _ = cmd.Help()
+			_ = cmd.Help()
 		}
 	},
 }
@@ -48,7 +48,7 @@ var gitBranchCmd = &cobra.Command{
 	Short: "Manage branches",
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
-			 _ = cmd.Help()
+			_ = cmd.Help()
 		}
 	},
 }
@@ -319,7 +319,7 @@ var gitTagCmd = &cobra.Command{
 	Short: "Manage tags",
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
-			 _ = cmd.Help()
+			_ = cmd.Help()
 		}
 	},
 }
@@ -366,7 +366,7 @@ func init() {
 	gitBranchCmd.AddCommand(gitBranchCurrentCmd)
 	gitBranchCmd.AddCommand(gitBranchCreateCmd)
 	gitBranchCmd.AddCommand(gitBranchSwitchCmd)
-	
+
 	gitBranchDeleteCmd.Flags().BoolP("force", "f", false, "Force delete")
 	gitBranchCmd.AddCommand(gitBranchDeleteCmd)
 

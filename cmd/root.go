@@ -13,7 +13,7 @@ Kubernetes, Docker, Cloud infrastructure, Git, and more.
 Think of it as k9s for the entire DevOps ecosystem.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
-			 _ = cmd.Help()
+			_ = cmd.Help()
 		}
 	},
 }
@@ -29,7 +29,10 @@ func init() {
 	rootCmd.AddCommand(awsCmd)
 	rootCmd.AddCommand(gitCmd)
 	rootCmd.AddCommand(helpCmd)
-	
+	// Register user and login commands if available
+	// These are defined in user.go and must be imported for registration
+	// The blank import in main.go ensures user.go's init runs
+
 	// Global flags
 	rootCmd.PersistentFlags().BoolP("verbose", "v", false, "verbose output")
 	rootCmd.PersistentFlags().StringP("config", "c", "", "config file")

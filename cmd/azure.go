@@ -197,31 +197,31 @@ var azureNetworkListCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(azureCmd)
-	
+
 	// VM commands
 	azureCmd.AddCommand(azureVMCmd)
 	azureVMCmd.AddCommand(azureVMListCmd, azureVMStartCmd, azureVMStopCmd)
-	
+
 	// Storage commands
 	azureCmd.AddCommand(azureStorageCmd)
 	azureStorageCmd.AddCommand(azureStorageListCmd)
-	
+
 	// Database commands
 	azureCmd.AddCommand(azureDatabaseCmd)
 	azureDatabaseCmd.AddCommand(azureDatabaseListCmd)
-	
+
 	// App Service commands
 	azureCmd.AddCommand(azureAppServiceCmd)
 	azureAppServiceCmd.AddCommand(azureAppServiceListCmd)
-	
+
 	// Resource Group commands
 	azureCmd.AddCommand(azureResourceGroupCmd)
 	azureResourceGroupCmd.AddCommand(azureResourceGroupListCmd)
-	
+
 	// Network commands
 	azureCmd.AddCommand(azureNetworkCmd)
 	azureNetworkCmd.AddCommand(azureNetworkListCmd)
-	
+
 	// Flags
 	azureCmd.PersistentFlags().StringVar(&azureSubscription, "subscription", "", "Azure Subscription ID")
 	azureCmd.PersistentFlags().StringVar(&azureResourceGroup, "resource-group", "", "Azure Resource Group")

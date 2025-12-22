@@ -21,7 +21,7 @@ var k8sCmd = &cobra.Command{
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
-			 _ = cmd.Help()
+			_ = cmd.Help()
 		}
 	},
 }
@@ -31,7 +31,7 @@ var k8sPodsCmd = &cobra.Command{
 	Short: "Manage Kubernetes pods",
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
-			 _ = cmd.Help()
+			_ = cmd.Help()
 		}
 	},
 }
@@ -123,7 +123,7 @@ var k8sDeploymentsCmd = &cobra.Command{
 	Short: "Manage Kubernetes deployments",
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
-			 _ = cmd.Help()
+			_ = cmd.Help()
 		}
 	},
 }
@@ -181,7 +181,7 @@ var k8sServicesCmd = &cobra.Command{
 	Short: "Manage Kubernetes services",
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
-			 _ = cmd.Help()
+			_ = cmd.Help()
 		}
 	},
 }
@@ -212,7 +212,7 @@ var k8sNodesCmd = &cobra.Command{
 	Short: "Manage Kubernetes nodes",
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
-			 _ = cmd.Help()
+			_ = cmd.Help()
 		}
 	},
 }
@@ -237,7 +237,7 @@ var k8sContextCmd = &cobra.Command{
 	Short: "Manage Kubernetes contexts",
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
-			 _ = cmd.Help()
+			_ = cmd.Help()
 		}
 	},
 }

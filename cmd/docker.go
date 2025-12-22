@@ -13,7 +13,7 @@ var dockerCmd = &cobra.Command{
 	Long:  "Manage Docker containers, images, and compose",
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
-			 _ = cmd.Help()
+			_ = cmd.Help()
 		}
 	},
 }
@@ -23,14 +23,14 @@ var dockerContainersCmd = &cobra.Command{
 	Short: "Manage containers",
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
-			 _ = cmd.Help()
+			_ = cmd.Help()
 		}
 	},
 }
 
 var dockerContainersListCmd = &cobra.Command{
-	Use:   "list",
-	Short: "List running containers",
+	Use:     "list",
+	Short:   "List running containers",
 	Aliases: []string{"ls", "ps"},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		all, _ := cmd.Flags().GetBool("all")
@@ -109,14 +109,14 @@ var dockerImagesCmd = &cobra.Command{
 	Short: "Manage Docker images",
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
-			 _ = cmd.Help()
+			_ = cmd.Help()
 		}
 	},
 }
 
 var dockerImagesListCmd = &cobra.Command{
-	Use:   "list",
-	Short: "List Docker images",
+	Use:     "list",
+	Short:   "List Docker images",
 	Aliases: []string{"ls"},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		client := docker.NewClient()
@@ -162,7 +162,7 @@ var dockerComposeCmd = &cobra.Command{
 	Short: "Docker Compose operations",
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
-			 _ = cmd.Help()
+			_ = cmd.Help()
 		}
 	},
 }
@@ -216,7 +216,7 @@ var dockerSystemCmd = &cobra.Command{
 	Short: "Docker system operations",
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
-			 _ = cmd.Help()
+			_ = cmd.Help()
 		}
 	},
 }
@@ -256,22 +256,22 @@ func init() {
 	// Containers subcommands
 	dockerContainersListCmd.Flags().BoolP("all", "a", false, "Show all containers")
 	dockerContainersCmd.AddCommand(dockerContainersListCmd)
-	
+
 	dockerContainersRemoveCmd.Flags().BoolP("force", "f", false, "Force remove")
 	dockerContainersCmd.AddCommand(dockerContainersRemoveCmd)
-	
+
 	dockerContainersStopCmd.Flags().BoolP("force", "f", false, "Force stop")
 	dockerContainersCmd.AddCommand(dockerContainersStopCmd)
-	
+
 	dockerContainersLogsCmd.Flags().BoolP("follow", "f", false, "Follow logs")
 	dockerContainersCmd.AddCommand(dockerContainersLogsCmd)
-	
+
 	dockerContainersCmd.AddCommand(dockerContainersStatsCmd)
 
 	// Images subcommands
 	dockerImagesCmd.AddCommand(dockerImagesListCmd)
 	dockerImagesCmd.AddCommand(dockerImagesPullCmd)
-	
+
 	dockerImagesRemoveCmd.Flags().BoolP("force", "f", false, "Force remove")
 	dockerImagesCmd.AddCommand(dockerImagesRemoveCmd)
 
@@ -279,15 +279,15 @@ func init() {
 	dockerComposeUpCmd.Flags().BoolP("detach", "d", false, "Detached mode")
 	dockerComposeCmd.AddCommand(dockerComposeUpCmd)
 	dockerComposeCmd.AddCommand(dockerComposeDownCmd)
-	
+
 	dockerComposeLogsCmd.Flags().BoolP("follow", "f", false, "Follow logs")
 	dockerComposeCmd.AddCommand(dockerComposeLogsCmd)
-	
+
 	dockerComposeCmd.AddCommand(dockerComposeStatusCmd)
 
 	// System subcommands
 	dockerSystemCmd.AddCommand(dockerSystemInfoCmd)
-	
+
 	dockerSystemPruneCmd.Flags().BoolP("all", "a", false, "Remove all unused resources")
 	dockerSystemCmd.AddCommand(dockerSystemPruneCmd)
 

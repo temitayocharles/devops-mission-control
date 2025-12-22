@@ -31,14 +31,14 @@ type Event struct {
 
 // Alert represents a triggered alert
 type Alert struct {
-	ID        string            `json:"id"`
-	Name      string            `json:"name"`
-	Severity  string            `json:"severity"` // "info", "warning", "critical"
-	Message   string            `json:"message"`
-	Timestamp time.Time         `json:"timestamp"`
-	Resolved  bool              `json:"resolved"`
-	ResolvedAt *time.Time       `json:"resolved_at,omitempty"`
-	Metadata  map[string]string `json:"metadata,omitempty"`
+	ID         string            `json:"id"`
+	Name       string            `json:"name"`
+	Severity   string            `json:"severity"` // "info", "warning", "critical"
+	Message    string            `json:"message"`
+	Timestamp  time.Time         `json:"timestamp"`
+	Resolved   bool              `json:"resolved"`
+	ResolvedAt *time.Time        `json:"resolved_at,omitempty"`
+	Metadata   map[string]string `json:"metadata,omitempty"`
 }
 
 // MetricsStore holds all collected metrics and events
@@ -235,12 +235,12 @@ func (s *MetricsStore) GetStats() map[string]interface{} {
 	}
 
 	return map[string]interface{}{
-		"total_metrics":    len(s.Metrics),
-		"total_events":     len(s.Events),
-		"total_alerts":     len(s.Alerts),
-		"active_alerts":    activeAlerts,
-		"successful_ops":   successCount,
-		"failed_ops":       failureCount,
-		"timestamp":        time.Now(),
+		"total_metrics":  len(s.Metrics),
+		"total_events":   len(s.Events),
+		"total_alerts":   len(s.Alerts),
+		"active_alerts":  activeAlerts,
+		"successful_ops": successCount,
+		"failed_ops":     failureCount,
+		"timestamp":      time.Now(),
 	}
 }
