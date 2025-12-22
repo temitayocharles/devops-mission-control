@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"sync"
@@ -101,7 +102,9 @@ func (s *TokenStore) GenerateToken(user, name string, ttl time.Duration) (*Token
 	if err := s.save(); err != nil {
 		return nil, err
 	}
-	_ = audit.Record("token.create", user, tok.Token, map[string]any{"name": name})
+	if err := audit.Record("token.create", user, tok.Token, map[string]any{"name": name}); err != nil {
+		fmt.Fprintf(os.Stderr, "audit record failed: %v\n", err)
+	}
 	return tok, nil
 }
 
@@ -207,7 +210,11 @@ func (s *TokenStore) save() error {
 	if err != nil {
 		return err
 	}
-	defer f.Close()
+	defer func() {
+		if cerr := f.Close(); cerr != nil {
+			fmt.Fprintf(os.Stderr, "tokens file close failed: %v\n", cerr)
+		}
+	}()
 	enc := json.NewEncoder(f)
 	if err := enc.Encode(s.tokens); err != nil {
 		return err
@@ -233,7 +240,11 @@ func (s *TokenStore) load() {
 	if err != nil {
 		return
 	}
-	defer f.Close()
+	defer func() {
+		if cerr := f.Close(); cerr != nil {
+			fmt.Fprintf(os.Stderr, "tokens file close failed: %v\n", cerr)
+		}
+	}()
 	dec := json.NewDecoder(f)
 	_ = dec.Decode(&s.tokens)
 	s.modMu.Lock()
@@ -246,7 +257,11 @@ func (s *TokenStore) watchFile() {
 	// attempt fsnotify watcher
 	watcher, err := fsnotify.NewWatcher()
 	if err == nil {
-		defer watcher.Close()
+		defer func() {
+			if cerr := watcher.Close(); cerr != nil {
+				fmt.Fprintf(os.Stderr, "watcher close failed: %v\n", cerr)
+			}
+		}()
 		dir := filepath.Dir(s.file)
 		// watch the directory so we see creates/renames
 		if err := watcher.Add(dir); err == nil {
@@ -266,7 +281,9 @@ func (s *TokenStore) watchFile() {
 					if !ok {
 						return
 					}
-					_ = audit.Record("tokenwatch.error", "", s.file, map[string]any{"error": err.Error()})
+					if rerr := audit.Record("tokenwatch.error", "", s.file, map[string]any{"error": err.Error()}); rerr != nil {
+						fmt.Fprintf(os.Stderr, "audit record failed: %v\n", rerr)
+					}
 				case <-s.stopCh:
 					return
 				}
@@ -311,7 +328,9 @@ func (s *TokenStore) sweeper() {
 				}
 				if t.ExpiresAt != nil && now.After(*t.ExpiresAt) {
 					t.Revoked = true
-					_ = audit.Record("token.expire.revoke", t.User, t.Token, nil)
+					if rerr := audit.Record("token.expire.revoke", t.User, t.Token, nil); rerr != nil {
+						fmt.Fprintf(os.Stderr, "audit record failed: %v\n", rerr)
+					}
 					changed = true
 				}
 				// safety: remove entries that are revoked and older than 30 days to keep file small

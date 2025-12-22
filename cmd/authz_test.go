@@ -11,12 +11,19 @@ import (
 
 func TestRequireMinRoleAndResolveActor(t *testing.T) {
 	// isolate file-backed stores in a temp dir
-	origWd, _ := os.Getwd()
+	origWd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("getwd: %v", err)
+	}
 	tmp := t.TempDir()
 	if err := os.Chdir(tmp); err != nil {
 		t.Fatalf("chdir: %v", err)
 	}
-	defer os.Chdir(origWd)
+	t.Cleanup(func() {
+		if cerr := os.Chdir(origWd); cerr != nil {
+			t.Fatalf("failed to chdir back: %v", cerr)
+		}
+	})
 
 	// reinitialize stores to use temp dir files
 	userStore = authpkg.NewUserStore()
@@ -53,12 +60,19 @@ func TestRequireMinRoleAndResolveActor(t *testing.T) {
 }
 
 func TestRequireAdminOrSelfAndResolveActorWithToken(t *testing.T) {
-	origWd, _ := os.Getwd()
+	origWd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("getwd: %v", err)
+	}
 	tmp := t.TempDir()
 	if err := os.Chdir(tmp); err != nil {
 		t.Fatalf("chdir: %v", err)
 	}
-	defer os.Chdir(origWd)
+	t.Cleanup(func() {
+		if cerr := os.Chdir(origWd); cerr != nil {
+			t.Fatalf("failed to chdir back: %v", cerr)
+		}
+	})
 
 	userStore = authpkg.NewUserStore()
 	tokenStore = authpkg.NewTokenStore(filepath.Join(tmp, "tokens.json"))
@@ -109,12 +123,19 @@ func TestRequireAdminOrSelfAndResolveActorWithToken(t *testing.T) {
 }
 
 func TestRequireMinRole_NoActor(t *testing.T) {
-	origWd, _ := os.Getwd()
+	origWd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("getwd: %v", err)
+	}
 	tmp := t.TempDir()
 	if err := os.Chdir(tmp); err != nil {
 		t.Fatalf("chdir: %v", err)
 	}
-	defer os.Chdir(origWd)
+	t.Cleanup(func() {
+		if cerr := os.Chdir(origWd); cerr != nil {
+			t.Fatalf("failed to chdir back: %v", cerr)
+		}
+	})
 
 	userStore = authpkg.NewUserStore()
 	tokenStore = authpkg.NewTokenStore(filepath.Join(tmp, "tokens.json"))

@@ -2,6 +2,7 @@ package audit
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"sync"
 	"time"
@@ -36,7 +37,11 @@ func Record(action, actor, target string, details map[string]any) error {
 	if err != nil {
 		return err
 	}
-	defer f.Close()
+	defer func() {
+		if cerr := f.Close(); cerr != nil {
+			fmt.Fprintf(os.Stderr, "audit file close failed: %v\n", cerr)
+		}
+	}()
 	enc := json.NewEncoder(f)
 	return enc.Encode(e)
 }
@@ -50,7 +55,11 @@ func ReadEntries(file string) ([]Entry, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer f.Close()
+	defer func() {
+		if cerr := f.Close(); cerr != nil {
+			fmt.Fprintf(os.Stderr, "audit file close failed: %v\n", cerr)
+		}
+	}()
 	dec := json.NewDecoder(f)
 	var res []Entry
 	for {

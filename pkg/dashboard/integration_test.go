@@ -1,7 +1,6 @@
 package dashboard
 
 import (
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -15,16 +14,29 @@ import (
 // Test that the dashboard accepts a token created after the server started.
 func TestDashboardPicksUpRuntimeToken(t *testing.T) {
 	// use temp dir so token store writes to a temp file
-	td, err := ioutil.TempDir("", "dash-integ")
+	td, err := os.MkdirTemp("", "dash-integ")
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.RemoveAll(td)
+	defer func() {
+		if err := os.RemoveAll(td); err != nil {
+			t.Fatalf("failed to remove temp dir: %v", err)
+		}
+	}()
 
 	// chdir to temp dir so TokenStore uses that location
-	oldwd, _ := os.Getwd()
-	_ = os.Chdir(td)
-	defer os.Chdir(oldwd)
+	oldwd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chdir(td); err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		if cerr := os.Chdir(oldwd); cerr != nil {
+			t.Fatalf("failed to chdir back: %v", cerr)
+		}
+	}()
 
 	// create user store and add a user (NewUserStore has no args now)
 	us := authpkg.NewUserStore()

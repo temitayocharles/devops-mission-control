@@ -3,9 +3,11 @@ package dashboard
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net"
 	"net/http"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -56,16 +58,19 @@ func authMiddleware(minRole authpkg.Role, h http.HandlerFunc) http.HandlerFunc {
 		authHeader := r.Header.Get("Authorization")
 		if authHeader != "" {
 			// expect `Bearer <token>`
-			var token string
-			fmt.Sscanf(authHeader, "Bearer %s", &token)
-			if token != "" {
-				tok, err := httpTokenStore.Validate(token)
-				if err != nil {
-					audit.Record("auth.check", "", r.URL.Path, map[string]any{"allowed": false, "reason": "invalid token"})
-					http.Error(w, "invalid token", http.StatusUnauthorized)
-					return
+			if strings.HasPrefix(authHeader, "Bearer ") {
+				token := strings.TrimSpace(strings.TrimPrefix(authHeader, "Bearer "))
+				if token != "" {
+					tok, err := httpTokenStore.Validate(token)
+					if err != nil {
+						if rerr := audit.Record("auth.check", "", r.URL.Path, map[string]any{"allowed": false, "reason": "invalid token"}); rerr != nil {
+							fmt.Fprintf(os.Stderr, "audit record failed: %v\n", rerr)
+						}
+						http.Error(w, "invalid token", http.StatusUnauthorized)
+						return
+					}
+					actor = tok.User
 				}
-				actor = tok.User
 			}
 		}
 		// fallback to X-Actor header
@@ -73,23 +78,31 @@ func authMiddleware(minRole authpkg.Role, h http.HandlerFunc) http.HandlerFunc {
 			actor = r.Header.Get("X-Actor")
 		}
 		if actor == "" {
-			audit.Record("auth.check", "", r.URL.Path, map[string]any{"allowed": false, "reason": "no actor"})
+			if err := audit.Record("auth.check", "", r.URL.Path, map[string]any{"allowed": false, "reason": "no actor"}); err != nil {
+				fmt.Fprintf(os.Stderr, "audit record failed: %v\n", err)
+			}
 			http.Error(w, "missing actor or token", http.StatusUnauthorized)
 			return
 		}
 		u, err := httpUserStore.GetUser(actor)
 		if err != nil {
-			audit.Record("auth.check", actor, r.URL.Path, map[string]any{"allowed": false, "reason": "actor not found"})
+			if rerr := audit.Record("auth.check", actor, r.URL.Path, map[string]any{"allowed": false, "reason": "actor not found"}); rerr != nil {
+				fmt.Fprintf(os.Stderr, "audit record failed: %v\n", rerr)
+			}
 			http.Error(w, "actor not found", http.StatusUnauthorized)
 			return
 		}
 		if roleLevel[u.Role] < roleLevel[minRole] {
-			audit.Record("auth.check", actor, r.URL.Path, map[string]any{"allowed": false, "required": minRole, "have": u.Role})
+			if rerr := audit.Record("auth.check", actor, r.URL.Path, map[string]any{"allowed": false, "required": minRole, "have": u.Role}); rerr != nil {
+				fmt.Fprintf(os.Stderr, "audit record failed: %v\n", rerr)
+			}
 			http.Error(w, "forbidden", http.StatusForbidden)
 			return
 		}
 		// allowed
-		_ = audit.Record("auth.check", actor, r.URL.Path, map[string]any{"allowed": true, "have": u.Role})
+		if err := audit.Record("auth.check", actor, r.URL.Path, map[string]any{"allowed": true, "have": u.Role}); err != nil {
+			fmt.Fprintf(os.Stderr, "audit record failed: %v\n", err)
+		}
 		h(w, r)
 	}
 }
@@ -115,8 +128,12 @@ func (d *Dashboard) Start() error {
 	// write a debug marker so we can trace startup failures from logs
 	func() {
 		if f, err := os.OpenFile("dashboard.start.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644); err == nil {
-			defer f.Close()
-			fmt.Fprintf(f, "%s: Start() called for %s\n", time.Now().Format(time.RFC3339), d.addr)
+			if _, werr := fmt.Fprintf(f, "%s: Start() called for %s\n", time.Now().Format(time.RFC3339), d.addr); werr != nil {
+				log.Printf("failed to write dashboard.start.log: %v", werr)
+			}
+			if cerr := f.Close(); cerr != nil {
+				log.Printf("failed to close dashboard.start.log: %v", cerr)
+			}
 		}
 	}()
 
@@ -161,24 +178,38 @@ func (d *Dashboard) Start() error {
 		// persist the error to a local file for debugging
 		f, ferr := os.OpenFile("dashboard.error.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
 		if ferr == nil {
-			defer f.Close()
-			fmt.Fprintf(f, "%s: bind error: %v\n", time.Now().Format(time.RFC3339), err)
+			if _, werr := fmt.Fprintf(f, "%s: bind error: %v\n", time.Now().Format(time.RFC3339), err); werr != nil {
+				log.Printf("failed to write dashboard.error.log: %v", werr)
+			}
+			if cerr := f.Close(); cerr != nil {
+				log.Printf("failed to close dashboard.error.log: %v", cerr)
+			}
 		}
-		_ = audit.Record("dashboard.error", "", d.addr, map[string]any{"error": err.Error()})
+		if rerr := audit.Record("dashboard.error", "", d.addr, map[string]any{"error": err.Error()}); rerr != nil {
+			log.Printf("audit record failed: %v", rerr)
+		}
 		return err
 	}
 
 	// record successful bind to help debugging
 	if f, ferr := os.OpenFile("dashboard.start.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644); ferr == nil {
-		fmt.Fprintf(f, "%s: bind OK on %s\n", time.Now().Format(time.RFC3339), d.addr)
-		f.Close()
+		if _, werr := fmt.Fprintf(f, "%s: bind OK on %s\n", time.Now().Format(time.RFC3339), d.addr); werr != nil {
+			log.Printf("failed to write dashboard.start.log: %v", werr)
+		}
+		if cerr := f.Close(); cerr != nil {
+			log.Printf("failed to close dashboard.start.log: %v", cerr)
+		}
 	}
 
 	// Run server.Serve on the bound listener so bind errors are already checked.
 	errCh := make(chan error, 1)
 	if f, ferr := os.OpenFile("dashboard.start.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644); ferr == nil {
-		fmt.Fprintf(f, "%s: launching serve goroutine\n", time.Now().Format(time.RFC3339))
-		f.Close()
+		if _, werr := fmt.Fprintf(f, "%s: launching serve goroutine\n", time.Now().Format(time.RFC3339)); werr != nil {
+			log.Printf("failed to write dashboard.start.log: %v", werr)
+		}
+		if cerr := f.Close(); cerr != nil {
+			log.Printf("failed to close dashboard.start.log: %v", cerr)
+		}
 	}
 	go func() {
 		errCh <- server.Serve(ln)
@@ -190,22 +221,34 @@ func (d *Dashboard) Start() error {
 	case err := <-errCh:
 		// persist the received err (can be nil or http.ErrServerClosed)
 		if f, ferr := os.OpenFile("dashboard.start.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644); ferr == nil {
-			fmt.Fprintf(f, "%s: errCh returned: %v\n", time.Now().Format(time.RFC3339), err)
-			f.Close()
+			if _, werr := fmt.Fprintf(f, "%s: errCh returned: %v\n", time.Now().Format(time.RFC3339), err); werr != nil {
+				log.Printf("failed to write dashboard.start.log: %v", werr)
+			}
+			if cerr := f.Close(); cerr != nil {
+				log.Printf("failed to close dashboard.start.log: %v", cerr)
+			}
 		}
 		if err != nil && err != http.ErrServerClosed {
 			fmt.Printf("Dashboard server error: %v\n", err)
 			// persist the error to a local file for debugging
 			f, ferr := os.OpenFile("dashboard.error.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
 			if ferr == nil {
-				defer f.Close()
-				fmt.Fprintf(f, "%s: Dashboard server error: %v\n", time.Now().Format(time.RFC3339), err)
+				if _, werr := fmt.Fprintf(f, "%s: Dashboard server error: %v\n", time.Now().Format(time.RFC3339), err); werr != nil {
+					log.Printf("failed to write dashboard.error.log: %v", werr)
+				}
+				if cerr := f.Close(); cerr != nil {
+					log.Printf("failed to close dashboard.error.log: %v", cerr)
+				}
 			}
-			_ = audit.Record("dashboard.error", "", d.addr, map[string]any{"error": err.Error()})
+			if rerr := audit.Record("dashboard.error", "", d.addr, map[string]any{"error": err.Error()}); rerr != nil {
+				log.Printf("audit record failed: %v", rerr)
+			}
 			return err
 		}
 	case <-d.stopChan:
-		server.Close()
+		if cerr := server.Close(); cerr != nil {
+			log.Printf("server close failed: %v", cerr)
+		}
 	}
 
 	d.mu.Lock()
@@ -228,49 +271,79 @@ func (d *Dashboard) Stop() {
 func (d *Dashboard) handleDashboard(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
-	fmt.Fprint(w, dashboardHTML)
+	if _, err := fmt.Fprint(w, dashboardHTML); err != nil {
+		fmt.Fprintf(os.Stderr, "write response failed: %v\n", err)
+	}
 }
 
 // handleCSS serves dashboard CSS
 func (d *Dashboard) handleCSS(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/css")
 	w.WriteHeader(http.StatusOK)
-	fmt.Fprint(w, dashboardCSS)
+	if _, err := fmt.Fprint(w, dashboardCSS); err != nil {
+		fmt.Fprintf(os.Stderr, "write response failed: %v\n", err)
+	}
 }
 
 // handleJS serves dashboard JavaScript
 func (d *Dashboard) handleJS(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/javascript")
 	w.WriteHeader(http.StatusOK)
-	fmt.Fprint(w, dashboardJS)
+	if _, err := fmt.Fprint(w, dashboardJS); err != nil {
+		fmt.Fprintf(os.Stderr, "write response failed: %v\n", err)
+	}
 }
 
 // handleMetrics returns metrics as JSON
 func (d *Dashboard) handleMetrics(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	metrics := d.metricsStore.GetMetrics()
-	json.NewEncoder(w).Encode(metrics)
+	if err := json.NewEncoder(w).Encode(metrics); err != nil {
+		http.Error(w, "failed to encode metrics", http.StatusInternalServerError)
+		if rerr := audit.Record("dashboard.error", "", d.addr, map[string]any{"error": err.Error()}); rerr != nil {
+			fmt.Fprintf(os.Stderr, "audit record failed: %v\n", rerr)
+		}
+		return
+	}
 }
 
 // handleEvents returns events as JSON
 func (d *Dashboard) handleEvents(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	events := d.metricsStore.GetEvents()
-	json.NewEncoder(w).Encode(events)
+	if err := json.NewEncoder(w).Encode(events); err != nil {
+		http.Error(w, "failed to encode events", http.StatusInternalServerError)
+		if rerr := audit.Record("dashboard.error", "", d.addr, map[string]any{"error": err.Error()}); rerr != nil {
+			fmt.Fprintf(os.Stderr, "audit record failed: %v\n", rerr)
+		}
+		return
+	}
 }
 
 // handleAlerts returns alerts as JSON
 func (d *Dashboard) handleAlerts(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	alerts := d.metricsStore.GetAlerts()
-	json.NewEncoder(w).Encode(alerts)
+	if err := json.NewEncoder(w).Encode(alerts); err != nil {
+		http.Error(w, "failed to encode alerts", http.StatusInternalServerError)
+		if rerr := audit.Record("dashboard.error", "", d.addr, map[string]any{"error": err.Error()}); rerr != nil {
+			fmt.Fprintf(os.Stderr, "audit record failed: %v\n", rerr)
+		}
+		return
+	}
 }
 
 // handleStats returns summary statistics
 func (d *Dashboard) handleStats(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	stats := d.metricsStore.GetStats()
-	json.NewEncoder(w).Encode(stats)
+	if err := json.NewEncoder(w).Encode(stats); err != nil {
+		http.Error(w, "failed to encode stats", http.StatusInternalServerError)
+		if rerr := audit.Record("dashboard.error", "", d.addr, map[string]any{"error": err.Error()}); rerr != nil {
+			fmt.Fprintf(os.Stderr, "audit record failed: %v\n", rerr)
+		}
+		return
+	}
 }
 
 // handleHealth returns dashboard health status
@@ -281,7 +354,13 @@ func (d *Dashboard) handleHealth(w http.ResponseWriter, r *http.Request) {
 		"timestamp": time.Now(),
 		"uptime":    time.Since(time.Now().Add(-1 * time.Hour)), // Example uptime
 	}
-	json.NewEncoder(w).Encode(response)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		http.Error(w, "failed to encode health", http.StatusInternalServerError)
+		if rerr := audit.Record("dashboard.error", "", d.addr, map[string]any{"error": err.Error()}); rerr != nil {
+			fmt.Fprintf(os.Stderr, "audit record failed: %v\n", rerr)
+		}
+		return
+	}
 }
 
 // handleAudit returns audit log entries as JSON
@@ -292,7 +371,13 @@ func (d *Dashboard) handleAudit(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "failed to read audit", http.StatusInternalServerError)
 		return
 	}
-	json.NewEncoder(w).Encode(entries)
+	if err := json.NewEncoder(w).Encode(entries); err != nil {
+		http.Error(w, "failed to encode audit entries", http.StatusInternalServerError)
+		if rerr := audit.Record("dashboard.error", "", d.addr, map[string]any{"error": err.Error()}); rerr != nil {
+			fmt.Fprintf(os.Stderr, "audit record failed: %v\n", rerr)
+		}
+		return
+	}
 }
 
 const dashboardHTML = `

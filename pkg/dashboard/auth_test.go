@@ -12,8 +12,15 @@ import (
 func TestAuthMiddleware_AllowsViewerWithToken(t *testing.T) {
 	dir := t.TempDir()
 	// switch cwd so stores use temp files
-	cwd, _ := os.Getwd()
-	t.Cleanup(func() { _ = os.Chdir(cwd) })
+	cwd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		if cerr := os.Chdir(cwd); cerr != nil {
+			t.Fatalf("failed to chdir back: %v", cerr)
+		}
+	})
 	if err := os.Chdir(dir); err != nil {
 		t.Fatal(err)
 	}
@@ -38,7 +45,9 @@ func TestAuthMiddleware_AllowsViewerWithToken(t *testing.T) {
 
 	handler := authMiddleware(authpkg.RoleViewer, func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(200)
-		w.Write([]byte("ok"))
+		if _, werr := w.Write([]byte("ok")); werr != nil {
+			t.Fatalf("write failed: %v", werr)
+		}
 	})
 
 	handler.ServeHTTP(rr, req)
@@ -49,8 +58,15 @@ func TestAuthMiddleware_AllowsViewerWithToken(t *testing.T) {
 
 func TestAuthMiddleware_RejectsLowerRole(t *testing.T) {
 	dir := t.TempDir()
-	cwd, _ := os.Getwd()
-	t.Cleanup(func() { _ = os.Chdir(cwd) })
+	cwd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		if cerr := os.Chdir(cwd); cerr != nil {
+			t.Fatalf("failed to chdir back: %v", cerr)
+		}
+	})
 	if err := os.Chdir(dir); err != nil {
 		t.Fatal(err)
 	}

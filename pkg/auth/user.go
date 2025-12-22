@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"sync"
 	"time"
@@ -65,7 +66,9 @@ func (s *UserStore) AddUser(username, password string, role Role) error {
 	if err := s.save(); err != nil {
 		return err
 	}
-	_ = audit.Record("user.create", username, username, map[string]any{"role": role})
+	if err := audit.Record("user.create", username, username, map[string]any{"role": role}); err != nil {
+		fmt.Fprintf(os.Stderr, "audit record failed: %v\n", err)
+	}
 	return nil
 }
 
@@ -117,7 +120,9 @@ func (s *UserStore) SetUserActive(username string, active bool) error {
 	if err := s.save(); err != nil {
 		return err
 	}
-	_ = audit.Record("user.set_active", username, username, map[string]any{"active": active})
+	if err := audit.Record("user.set_active", username, username, map[string]any{"active": active}); err != nil {
+		fmt.Fprintf(os.Stderr, "audit record failed: %v\n", err)
+	}
 	return nil
 }
 
@@ -133,7 +138,9 @@ func (s *UserStore) SetUserRole(username string, role Role) error {
 	if err := s.save(); err != nil {
 		return err
 	}
-	_ = audit.Record("user.set_role", username, username, map[string]any{"role": role})
+	if err := audit.Record("user.set_role", username, username, map[string]any{"role": role}); err != nil {
+		fmt.Fprintf(os.Stderr, "audit record failed: %v\n", err)
+	}
 	return nil
 }
 
@@ -148,7 +155,9 @@ func (s *UserStore) DeleteUser(username string) error {
 	if err := s.save(); err != nil {
 		return err
 	}
-	_ = audit.Record("user.delete", username, username, nil)
+	if err := audit.Record("user.delete", username, username, nil); err != nil {
+		fmt.Fprintf(os.Stderr, "audit record failed: %v\n", err)
+	}
 	return nil
 }
 
