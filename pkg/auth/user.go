@@ -175,7 +175,11 @@ func (s *UserStore) save() error {
 	if err != nil {
 		return err
 	}
-	defer f.Close()
+	defer func() {
+		if cerr := f.Close(); cerr != nil {
+			fmt.Fprintf(os.Stderr, "failed to close users file: %v\n", cerr)
+		}
+	}()
 	enc := json.NewEncoder(f)
 	return enc.Encode(s.users)
 }
@@ -188,7 +192,11 @@ func (s *UserStore) load() {
 	if err != nil {
 		return
 	}
-	defer f.Close()
+	defer func() {
+		if cerr := f.Close(); cerr != nil {
+			fmt.Fprintf(os.Stderr, "failed to close users file: %v\n", cerr)
+		}
+	}()
 	dec := json.NewDecoder(f)
 	_ = dec.Decode(&s.users)
 }

@@ -148,7 +148,9 @@ func (s *TokenStore) Revoke(t string) error {
 	tok.Revoked = true
 	err := s.save()
 	if err == nil {
-		_ = audit.Record("token.revoke", tok.User, tok.Token, nil)
+		if rerr := audit.Record("token.revoke", tok.User, tok.Token, nil); rerr != nil {
+			fmt.Fprintf(os.Stderr, "audit record failed: %v\n", rerr)
+		}
 	}
 	return err
 }
@@ -189,7 +191,9 @@ func (s *TokenStore) Rotate(old string, ttl time.Duration) (*Token, error) {
 	if err := s.save(); err != nil {
 		return nil, err
 	}
-	_ = audit.Record("token.rotate", newTok.User, newTok.Token, map[string]any{"replaced": old})
+	if rerr := audit.Record("token.rotate", newTok.User, newTok.Token, map[string]any{"replaced": old}); rerr != nil {
+		fmt.Fprintf(os.Stderr, "audit record failed: %v\n", rerr)
+	}
 	return newTok, nil
 }
 
