@@ -12,6 +12,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Cache Go modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/.cache/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
@@ -27,6 +37,9 @@ jobs:
 
       - name: Vet
         run: go vet ./...
+
+      - name: Ensure modules tidy
+        run: go mod tidy
 
       - name: Download dependencies
         run: go mod download
