@@ -16,7 +16,7 @@ var awsCmd = &cobra.Command{
 	Long:  "Manage AWS resources (EC2, S3, RDS, IAM, etc.)",
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
-			cmd.Help()
+			_ = cmd.Help()
 		}
 	},
 }
@@ -43,7 +43,7 @@ var awsEC2Cmd = &cobra.Command{
 	Short: "EC2 instance management",
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
-			cmd.Help()
+			_ = cmd.Help()
 		}
 	},
 }
@@ -135,7 +135,7 @@ var awsS3Cmd = &cobra.Command{
 	Short: "S3 bucket management",
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
-			cmd.Help()
+			_ = cmd.Help()
 		}
 	},
 }
@@ -190,7 +190,7 @@ var awsRDSCmd = &cobra.Command{
 	Short: "RDS database management",
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
-			cmd.Help()
+			_ = cmd.Help()
 		}
 	},
 }
@@ -265,7 +265,7 @@ var awsCostCmd = &cobra.Command{
 	Short: "Cost optimization and monitoring",
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
-			cmd.Help()
+			_ = cmd.Help()
 		}
 	},
 }
@@ -303,7 +303,7 @@ var awsAccountCmd = &cobra.Command{
 	Short: "AWS account operations",
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
-			cmd.Help()
+			_ = cmd.Help()
 		}
 	},
 }
@@ -330,7 +330,7 @@ var awsSecurityCmd = &cobra.Command{
 	Short: "AWS security operations",
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
-			cmd.Help()
+			_ = cmd.Help()
 		}
 	},
 }

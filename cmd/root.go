@@ -13,7 +13,7 @@ Kubernetes, Docker, Cloud infrastructure, Git, and more.
 Think of it as k9s for the entire DevOps ecosystem.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
-			cmd.Help()
+			 _ = cmd.Help()
 		}
 	},
 }
@@ -39,6 +39,6 @@ var helpCmd = &cobra.Command{
 	Use:   "help",
 	Short: "Show help for ops-tool and all commands",
 	Run: func(cmd *cobra.Command, args []string) {
-		rootCmd.Help()
+		_ = rootCmd.Help()
 	},
 }

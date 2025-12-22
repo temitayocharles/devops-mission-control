@@ -13,7 +13,7 @@ var dockerCmd = &cobra.Command{
 	Long:  "Manage Docker containers, images, and compose",
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
-			cmd.Help()
+			 _ = cmd.Help()
 		}
 	},
 }
@@ -23,7 +23,7 @@ var dockerContainersCmd = &cobra.Command{
 	Short: "Manage containers",
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
-			cmd.Help()
+			 _ = cmd.Help()
 		}
 	},
 }
@@ -109,7 +109,7 @@ var dockerImagesCmd = &cobra.Command{
 	Short: "Manage Docker images",
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
-			cmd.Help()
+			 _ = cmd.Help()
 		}
 	},
 }
@@ -162,7 +162,7 @@ var dockerComposeCmd = &cobra.Command{
 	Short: "Docker Compose operations",
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
-			cmd.Help()
+			 _ = cmd.Help()
 		}
 	},
 }
@@ -216,7 +216,7 @@ var dockerSystemCmd = &cobra.Command{
 	Short: "Docker system operations",
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
-			cmd.Help()
+			 _ = cmd.Help()
 		}
 	},
 }
