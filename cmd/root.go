@@ -5,9 +5,9 @@ import (
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "ops-tool",
+	Use:   "missionctl",
 	Short: "A lightweight, agnostic DevOps CLI tool",
-	Long: `ops-tool is a unified DevOps command-line interface for managing
+	Long: `missionctl is a unified DevOps command-line interface for managing
 Kubernetes, Docker, Cloud infrastructure, Git, and more.
 
 Think of it as k9s for the entire DevOps ecosystem.`,
@@ -44,7 +44,7 @@ func init() {
 
 var helpCmd = &cobra.Command{
 	Use:   "help",
-	Short: "Show help for ops-tool and all commands",
+	Short: "Show help for missionctl and all commands",
 	Run: func(cmd *cobra.Command, args []string) {
 		_ = rootCmd.Help()
 	},

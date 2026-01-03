@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
-	authpkg "github.com/yourusername/ops-tool/pkg/auth"
-	awspkg "github.com/yourusername/ops-tool/pkg/aws"
+	authpkg "github.com/yourusername/devops-mission-control/pkg/auth"
+	awspkg "github.com/yourusername/devops-mission-control/pkg/aws"
 )
 
 var awsRegion string

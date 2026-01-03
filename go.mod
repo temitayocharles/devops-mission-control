@@ -1,4 +1,4 @@
-module github.com/yourusername/ops-tool
+module github.com/yourusername/devops-mission-control
 
 go 1.21
 

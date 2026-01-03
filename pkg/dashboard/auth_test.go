@@ -6,7 +6,7 @@ import (
 	"os"
 	"testing"
 
-	authpkg "github.com/yourusername/ops-tool/pkg/auth"
+	authpkg "github.com/yourusername/devops-mission-control/pkg/auth"
 )
 
 func TestAuthMiddleware_AllowsViewerWithToken(t *testing.T) {

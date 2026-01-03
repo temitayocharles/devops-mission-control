@@ -72,7 +72,7 @@ jobs:
         run: go mod download
 
       - name: Build binary
-        run: go build -o ops-tool .
+        run: go build -o missionctl .
 
       - name: Run golangci-lint
         uses: golangci/golangci-lint-action@v4

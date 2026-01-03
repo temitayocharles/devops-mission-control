@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-	"github.com/yourusername/ops-tool/pkg/audit"
+	"github.com/yourusername/devops-mission-control/pkg/audit"
 )
 
 var auditCmd = &cobra.Command{

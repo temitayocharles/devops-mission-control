@@ -6,6 +6,6 @@
 .DS_Store
 dist/
 bin/
-ops-tool
+missionctl
 *.out
 coverage.txt

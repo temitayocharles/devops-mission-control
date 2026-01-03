@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
-	authpkg "github.com/yourusername/ops-tool/pkg/auth"
-	helmpkg "github.com/yourusername/ops-tool/pkg/helm"
+	authpkg "github.com/yourusername/devops-mission-control/pkg/auth"
+	helmpkg "github.com/yourusername/devops-mission-control/pkg/helm"
 )
 
 var helmNamespace string

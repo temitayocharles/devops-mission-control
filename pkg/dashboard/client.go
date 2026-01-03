@@ -11,12 +11,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/yourusername/ops-tool/pkg/audit"
-	authpkg "github.com/yourusername/ops-tool/pkg/auth"
-	"github.com/yourusername/ops-tool/pkg/metrics"
+	"github.com/yourusername/devops-mission-control/pkg/audit"
+	authpkg "github.com/yourusername/devops-mission-control/pkg/auth"
+	"github.com/yourusername/devops-mission-control/pkg/metrics"
 )
 
-// Dashboard serves the ops-tool web dashboard
+// Dashboard serves the missionctl web dashboard
 type Dashboard struct {
 	addr         string
 	metricsStore *metrics.MetricsStore
@@ -384,14 +384,14 @@ const dashboardHTML = `
 <!DOCTYPE html>
 <html>
 <head>
-	<title>ops-tool Dashboard</title>
+	<title>missionctl Dashboard</title>
 	<link rel="stylesheet" href="/css/dashboard.css">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 </head>
 <body>
 	<div class="container">
 		<header>
-			<h1>🚀 ops-tool Dashboard</h1>
+			<h1>🚀 missionctl Dashboard</h1>
 			<p>Real-time DevOps Operations Monitoring</p>
 		</header>
 
@@ -438,7 +438,7 @@ const dashboardHTML = `
 		</div>
 
 		<footer>
-			<p>ops-tool v1.0 | Last updated: <span id="lastUpdate">-</span></p>
+			<p>missionctl v1.0 | Last updated: <span id="lastUpdate">-</span></p>
 		</footer>
 	</div>
 

@@ -3,7 +3,7 @@ package cmd
 import (
 	"fmt"
 	"github.com/spf13/cobra"
-	authpkg "github.com/yourusername/ops-tool/pkg/auth"
+	authpkg "github.com/yourusername/devops-mission-control/pkg/auth"
 )
 
 var userStore = authpkg.NewUserStore("")

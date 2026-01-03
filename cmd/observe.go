@@ -4,10 +4,10 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
-	authpkg "github.com/yourusername/ops-tool/pkg/auth"
-	dashboardpkg "github.com/yourusername/ops-tool/pkg/dashboard"
-	metricspkg "github.com/yourusername/ops-tool/pkg/metrics"
-	slackpkg "github.com/yourusername/ops-tool/pkg/slack"
+	authpkg "github.com/yourusername/devops-mission-control/pkg/auth"
+	dashboardpkg "github.com/yourusername/devops-mission-control/pkg/dashboard"
+	metricspkg "github.com/yourusername/devops-mission-control/pkg/metrics"
+	slackpkg "github.com/yourusername/devops-mission-control/pkg/slack"
 )
 
 var (

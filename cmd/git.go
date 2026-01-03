@@ -5,8 +5,8 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	authpkg "github.com/yourusername/ops-tool/pkg/auth"
-	gitpkg "github.com/yourusername/ops-tool/pkg/git"
+	authpkg "github.com/yourusername/devops-mission-control/pkg/auth"
+	gitpkg "github.com/yourusername/devops-mission-control/pkg/git"
 )
 
 var gitCmd = &cobra.Command{

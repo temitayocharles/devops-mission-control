@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	authpkg "github.com/yourusername/ops-tool/pkg/auth"
+	authpkg "github.com/yourusername/devops-mission-control/pkg/auth"
 )
 
 // Test that the dashboard accepts a token created after the server started.

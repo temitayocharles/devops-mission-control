@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
-	authpkg "github.com/yourusername/ops-tool/pkg/auth"
-	azurepkg "github.com/yourusername/ops-tool/pkg/azure"
+	authpkg "github.com/yourusername/devops-mission-control/pkg/auth"
+	azurepkg "github.com/yourusername/devops-mission-control/pkg/azure"
 )
 
 var azureSubscription string

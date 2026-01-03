@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/yourusername/ops-tool/cmd"
+	"github.com/yourusername/devops-mission-control/cmd"
 	"os"
 )
 

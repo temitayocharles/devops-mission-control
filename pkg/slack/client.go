@@ -139,7 +139,7 @@ func NewClient(webhookURL, channel string, opts ...Option) *Client {
 	c := &Client{
 		WebhookURL: webhookURL,
 		Channel:    channel,
-		Username:   "ops-tool",
+		Username:   "missionctl",
 		IconEmoji:  ":robot_face:",
 		HTTPClient: &http.Client{Timeout: 10 * time.Second},
 		MaxRetries: 2,

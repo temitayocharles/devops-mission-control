@@ -1,0 +1,17 @@
+package auth
+
+import (
+    "crypto/rand"
+    "encoding/hex"
+)
+
+// GenerateToken creates a random hex token of n bytes (default 16)
+func GenerateToken(n int) (string, error) {
+    if n <= 0 {
+        n = 16
+    }
+    b := make([]byte, n)
+    _, err := rand.Read(b)
+    package auth
+
+    // legacy token helpers (placeholder). Real token store lives in token_store.go

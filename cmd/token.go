@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-	authpkg "github.com/yourusername/ops-tool/pkg/auth"
+	authpkg "github.com/yourusername/devops-mission-control/pkg/auth"
 )
 
 var tokenStore = authpkg.NewTokenStore("", "tokens.json")

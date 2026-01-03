@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
-	authpkg "github.com/yourusername/ops-tool/pkg/auth"
-	gcppkg "github.com/yourusername/ops-tool/pkg/gcp"
+	authpkg "github.com/yourusername/devops-mission-control/pkg/auth"
+	gcppkg "github.com/yourusername/devops-mission-control/pkg/gcp"
 )
 
 var gcpProject string

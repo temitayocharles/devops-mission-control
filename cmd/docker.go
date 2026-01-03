@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
-	authpkg "github.com/yourusername/ops-tool/pkg/auth"
-	"github.com/yourusername/ops-tool/pkg/docker"
+	authpkg "github.com/yourusername/devops-mission-control/pkg/auth"
+	"github.com/yourusername/devops-mission-control/pkg/docker"
 )
 
 var dockerCmd = &cobra.Command{
